@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Check, ChevronDown, ChevronLeft, Grid2X2, LayoutList, Pencil, Plus, Search, Sparkles, Star, X } from "lucide-react";
+import { BookOpen, Check, ChevronDown, ChevronLeft, CircleDashed, Grid2X2, LayoutList, Pencil, Plus, Search, Sparkles, Star, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
 
@@ -24,6 +24,7 @@ export default function MathLibrary() {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [pendingSolvedIds, setPendingSolvedIds] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [showUnsolvedOnly, setShowUnsolvedOnly] = useState(false);
   const migratedLegacySolved = useRef(false);
 
   useEffect(() => {
@@ -104,9 +105,19 @@ export default function MathLibrary() {
     solved: problems.reduce((count, problem) => count + Number(problem.solved), 0),
   }), [problems]);
   const visibleProblems = useMemo(
-    () => showFavoritesOnly ? problems.filter((problem) => favoriteIds.has(problem.id)) : problems,
-    [favoriteIds, problems, showFavoritesOnly],
+    () => problems.filter((problem) =>
+      (!showFavoritesOnly || favoriteIds.has(problem.id)) &&
+      (!showUnsolvedOnly || !problem.solved)
+    ),
+    [favoriteIds, problems, showFavoritesOnly, showUnsolvedOnly],
   );
+  const emptyMessage = showFavoritesOnly && showUnsolvedOnly
+    ? "즐겨찾기한 미해결 문제가 없습니다."
+    : showFavoritesOnly
+      ? "즐겨찾기한 문제가 없습니다."
+      : showUnsolvedOnly
+        ? "해결하지 못한 문제가 없습니다."
+        : "검색 결과가 없습니다.";
 
   function toggleFavorite(id: string) {
     setFavoriteIds((current) => {
@@ -182,12 +193,13 @@ export default function MathLibrary() {
         <div className="toolbar">
           <label className="search"><Search size={19}/><input aria-label="문제 검색" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="제목, 태그, 수식, 풀이 검색"/>{query && <button onClick={() => setQuery("")} aria-label="검색 지우기"><X size={16}/></button>}</label>
           <div className="toolbar-actions">
+            <button className={`unsolved-filter ${showUnsolvedOnly ? "active" : ""}`} onClick={() => setShowUnsolvedOnly((value) => !value)} aria-pressed={showUnsolvedOnly}><CircleDashed size={17}/> 미해결 <span>{stats.problems - stats.solved}</span></button>
             <button className={`favorite-filter ${showFavoritesOnly ? "active" : ""}`} onClick={() => setShowFavoritesOnly((value) => !value)} aria-pressed={showFavoritesOnly}><Star size={17} fill={showFavoritesOnly ? "currentColor" : "none"}/> 즐겨찾기 <span>{favoriteIds.size}</span></button>
             <div className="view-switch"><button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} aria-label="그리드 보기"><Grid2X2 size={18}/></button><button className={view === "list" ? "active" : ""} onClick={() => setView("list")} aria-label="리스트 보기"><LayoutList size={19}/></button></div>
           </div>
         </div>
         <div className={`problem-${view}`}>
-          {loading ? <p className="empty">문제를 펼치는 중…</p> : visibleProblems.length === 0 ? <p className="empty">{showFavoritesOnly ? "즐겨찾기한 문제가 없습니다." : "검색 결과가 없습니다."}</p> : visibleProblems.map((problem, index) => <article className={`problem-card ${problem.solved ? "is-solved" : ""}`} key={problem.id}>
+          {loading ? <p className="empty">문제를 펼치는 중…</p> : visibleProblems.length === 0 ? <p className="empty">{emptyMessage}</p> : visibleProblems.map((problem, index) => <article className={`problem-card ${problem.solved ? "is-solved" : ""}`} key={problem.id}>
             <button className="problem-card-main" onClick={() => setSelected(problem)}>
               <div className="card-top"><span className="number">{String(index + 1).padStart(2, "0")}</span><span className="difficulty">{"●".repeat(problem.difficulty)}{"○".repeat(5 - problem.difficulty)}</span></div>
               <h2>{problem.title}</h2><p>{problem.problemMarkdown.replace(/[$#*`>\\]/g, " ").replace(/\s+/g, " ").slice(0, 112)}…</p>

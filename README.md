@@ -10,7 +10,7 @@
 - 문제 추가·수정
 - 한 문제에 여러 풀이 추가·수정
 - PostgreSQL(Neon/Vercel Marketplace) 저장
-- `ADMIN_KEY`를 이용한 쓰기 보호
+- 누구나 문제와 풀이를 추가·수정할 수 있는 개인용 편집 공간
 - DB가 없는 로컬 환경에서는 메모리 데이터로 즉시 실행
 
 ## 로컬 실행
@@ -28,4 +28,4 @@ npm run dev
 
 ## 배포
 
-Vercel 프로젝트에 `DATABASE_URL`과 `ADMIN_KEY`를 설정한 후 배포합니다. 읽기는 공개이고 쓰기 작업에만 편집 키가 필요합니다.
+Vercel 프로젝트에 `DATABASE_URL`만 연결하면 됩니다. 읽기와 쓰기 모두 공개입니다.

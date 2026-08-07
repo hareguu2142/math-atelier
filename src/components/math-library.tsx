@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookOpen, ChevronDown, ChevronLeft, Grid2X2, KeyRound, LayoutList, Pencil, Plus, Search, Sparkles, X } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronLeft, Grid2X2, LayoutList, Pencil, Plus, Search, Sparkles, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
 
@@ -41,24 +41,16 @@ export default function MathLibrary() {
 
   const stats = useMemo(() => ({ problems: problems.length, solutions: problems.reduce((n, p) => n + p.solutions.length, 0) }), [problems]);
 
-  function changeKey() {
-    const value = window.prompt("편집 키를 입력하세요.", localStorage.getItem("math-atelier-key") ?? "");
-    if (value === null) return;
-    if (value) localStorage.setItem("math-atelier-key", value); else localStorage.removeItem("math-atelier-key");
-  }
-
   async function save() {
     if (!editor) return;
     setError("");
-    let key = localStorage.getItem("math-atelier-key") ?? "";
-    if (!key) { key = window.prompt("편집 키를 입력하세요. (로컬에서는 비워도 됩니다.)") ?? ""; if (key) localStorage.setItem("math-atelier-key", key); }
     const isProblem = editor.kind === "problem";
     const res = await fetch(isProblem ? "/api/problems" : "/api/solutions", {
       method: editor.id ? "PATCH" : "POST",
-      headers: { "content-type": "application/json", "x-admin-key": key },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify(isProblem ? { ...editor.value, id: editor.id } : { id: editor.id, problemId: editor.problemId, title: editor.title, contentMarkdown: editor.contentMarkdown }),
     });
-    if (!res.ok) { const data = await res.json(); setError(data.error ?? "저장하지 못했습니다."); if (res.status === 401) localStorage.removeItem("math-atelier-key"); return; }
+    if (!res.ok) { const data = await res.json(); setError(data.error ?? "저장하지 못했습니다."); return; }
     const selectedId = selected?.id;
     setEditor(null);
     await refresh(query, selectedId);
@@ -67,7 +59,7 @@ export default function MathLibrary() {
   return <main>
     <header className="topbar">
       <button className="brand" onClick={() => setSelected(null)} aria-label="문제 목록으로"><span className="brand-mark">∑</span><span>수학의 서재</span></button>
-      <div className="header-actions"><button className="ghost" onClick={changeKey}><KeyRound size={17}/> 편집 키</button><button className="primary" onClick={() => setEditor({ kind: "problem", value: blank })}><Plus size={18}/> 문제 추가</button></div>
+      <div className="header-actions"><button className="primary" onClick={() => setEditor({ kind: "problem", value: blank })}><Plus size={18}/> 문제 추가</button></div>
     </header>
 
     {!selected ? <>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookOpen, ChevronDown, ChevronLeft, Grid2X2, LayoutList, Pencil, Plus, Search, Sparkles, Star, X } from "lucide-react";
+import { BookOpen, Check, ChevronDown, ChevronLeft, Grid2X2, LayoutList, Pencil, Plus, Search, Sparkles, Star, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
 
@@ -11,6 +11,7 @@ type EditorState =
 
 const blank: ProblemInput = { title: "", problemMarkdown: "", difficulty: 2, tags: [] };
 const FAVORITES_KEY = "math-atelier-favorites";
+const SOLVED_KEY = "math-atelier-solved";
 
 export default function MathLibrary() {
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -21,21 +22,25 @@ export default function MathLibrary() {
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [error, setError] = useState("");
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   useEffect(() => {
-    function readFavorites() {
+    function readSavedProblemIds() {
       try {
-        const stored = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]");
-        setFavoriteIds(new Set(Array.isArray(stored) ? stored.filter((id): id is string => typeof id === "string") : []));
+        const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]");
+        const solved = JSON.parse(localStorage.getItem(SOLVED_KEY) ?? "[]");
+        setFavoriteIds(new Set(Array.isArray(favorites) ? favorites.filter((id): id is string => typeof id === "string") : []));
+        setSolvedIds(new Set(Array.isArray(solved) ? solved.filter((id): id is string => typeof id === "string") : []));
       } catch {
         setFavoriteIds(new Set());
+        setSolvedIds(new Set());
       }
     }
 
-    readFavorites();
-    window.addEventListener("storage", readFavorites);
-    return () => window.removeEventListener("storage", readFavorites);
+    readSavedProblemIds();
+    window.addEventListener("storage", readSavedProblemIds);
+    return () => window.removeEventListener("storage", readSavedProblemIds);
   }, []);
 
   const refresh = useCallback(async (q: string, selectedId?: string) => {
@@ -57,7 +62,11 @@ export default function MathLibrary() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const stats = useMemo(() => ({ problems: problems.length, solutions: problems.reduce((n, p) => n + p.solutions.length, 0) }), [problems]);
+  const stats = useMemo(() => ({
+    problems: problems.length,
+    solutions: problems.reduce((n, p) => n + p.solutions.length, 0),
+    solved: problems.reduce((count, problem) => count + Number(solvedIds.has(problem.id)), 0),
+  }), [problems, solvedIds]);
   const visibleProblems = useMemo(
     () => showFavoritesOnly ? problems.filter((problem) => favoriteIds.has(problem.id)) : problems,
     [favoriteIds, problems, showFavoritesOnly],
@@ -70,6 +79,20 @@ export default function MathLibrary() {
       else next.add(id);
       try {
         localStorage.setItem(FAVORITES_KEY, JSON.stringify([...next]));
+      } catch {
+        // Storage can be unavailable in private or restricted browser contexts.
+      }
+      return next;
+    });
+  }
+
+  function toggleSolved(id: string) {
+    setSolvedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      try {
+        localStorage.setItem(SOLVED_KEY, JSON.stringify([...next]));
       } catch {
         // Storage can be unavailable in private or restricted browser contexts.
       }
@@ -103,7 +126,7 @@ export default function MathLibrary() {
         <p className="eyebrow"><Sparkles size={14}/> 생각을 여는 문제들</p>
         <h1>답보다 오래 남는<br/><em>좋은 질문</em>을 모읍니다.</h1>
         <p className="hero-copy">계산보다 논리, 공식보다 발견. 직접 고른 수학 문제와 여러 가지 풀이를 한곳에서 탐색하세요.</p>
-        <div className="stats"><span><strong>{stats.problems}</strong> 문제</span><i/><span><strong>{stats.solutions}</strong> 풀이</span></div>
+        <div className="stats"><span><strong>{stats.problems}</strong> 문제</span><i/><span><strong>{stats.solutions}</strong> 풀이</span><i/><span><strong>{stats.solved}</strong> 해결</span></div>
       </section>
       <section className="library">
         <div className="toolbar">
@@ -114,20 +137,21 @@ export default function MathLibrary() {
           </div>
         </div>
         <div className={`problem-${view}`}>
-          {loading ? <p className="empty">문제를 펼치는 중…</p> : visibleProblems.length === 0 ? <p className="empty">{showFavoritesOnly ? "즐겨찾기한 문제가 없습니다." : "검색 결과가 없습니다."}</p> : visibleProblems.map((problem, index) => <article className="problem-card" key={problem.id}>
+          {loading ? <p className="empty">문제를 펼치는 중…</p> : visibleProblems.length === 0 ? <p className="empty">{showFavoritesOnly ? "즐겨찾기한 문제가 없습니다." : "검색 결과가 없습니다."}</p> : visibleProblems.map((problem, index) => <article className={`problem-card ${solvedIds.has(problem.id) ? "is-solved" : ""}`} key={problem.id}>
             <button className="problem-card-main" onClick={() => setSelected(problem)}>
               <div className="card-top"><span className="number">{String(index + 1).padStart(2, "0")}</span><span className="difficulty">{"●".repeat(problem.difficulty)}{"○".repeat(5 - problem.difficulty)}</span></div>
               <h2>{problem.title}</h2><p>{problem.problemMarkdown.replace(/[$#*`>\\]/g, " ").replace(/\s+/g, " ").slice(0, 112)}…</p>
               <div className="tag-row">{problem.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>
               <div className="card-foot"><span><BookOpen size={15}/>{problem.solutions.length}개 풀이</span><span>열어보기 →</span></div>
             </button>
+            <SolvedButton active={solvedIds.has(problem.id)} onClick={() => toggleSolved(problem.id)} label={problem.title}/>
             <FavoriteButton active={favoriteIds.has(problem.id)} onClick={() => toggleFavorite(problem.id)} label={problem.title}/>
           </article>)}
         </div>
       </section>
     </> : <article className="detail">
       <button className="back" onClick={() => setSelected(null)}><ChevronLeft size={18}/> 모든 문제</button>
-      <div className="detail-head"><div><div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><h1>{selected.title}</h1></div><div className="detail-actions"><FavoriteButton active={favoriteIds.has(selected.id)} onClick={() => toggleFavorite(selected.id)} label={selected.title} detail/><button className="ghost" onClick={() => setEditor({ kind: "problem", id: selected.id, value: { title: selected.title, problemMarkdown: selected.problemMarkdown, tags: selected.tags, difficulty: selected.difficulty } })}><Pencil size={16}/> 문제 수정</button></div></div>
+      <div className="detail-head"><div><div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><h1>{selected.title}</h1></div><div className="detail-actions"><SolvedButton active={solvedIds.has(selected.id)} onClick={() => toggleSolved(selected.id)} label={selected.title} detail/><FavoriteButton active={favoriteIds.has(selected.id)} onClick={() => toggleFavorite(selected.id)} label={selected.title} detail/><button className="ghost" onClick={() => setEditor({ kind: "problem", id: selected.id, value: { title: selected.title, problemMarkdown: selected.problemMarkdown, tags: selected.tags, difficulty: selected.difficulty } })}><Pencil size={16}/> 문제 수정</button></div></div>
       <section className="paper"><div className="section-label">PROBLEM</div><Markdown>{selected.problemMarkdown}</Markdown></section>
       <div className="solution-title"><div><p className="eyebrow">SOLUTIONS</p><h2>풀이 {selected.solutions.length}개</h2></div><button className="primary" onClick={() => setEditor({ kind: "solution", problemId: selected.id, title: `풀이 ${selected.solutions.length + 1}`, contentMarkdown: "" })}><Plus size={18}/> 풀이 추가</button></div>
       {selected.solutions.map((solution, i) => <SolutionBlock key={solution.id} solution={solution} index={i} onEdit={() => setEditor({ kind: "solution", id: solution.id, problemId: selected.id, title: solution.title, contentMarkdown: solution.contentMarkdown })}/>)}
@@ -136,6 +160,12 @@ export default function MathLibrary() {
     {editor && <EditorModal editor={editor} setEditor={setEditor} save={save} error={error}/>}
     <footer>Math Atelier · 한 문제, 여러 시선</footer>
   </main>;
+}
+
+function SolvedButton({ active, onClick, label, detail = false }: { active: boolean; onClick: () => void; label: string; detail?: boolean }) {
+  return <button className={`${detail ? "solved-detail" : "solved-card"} ${active ? "active" : ""}`} onClick={onClick} aria-pressed={active} aria-label={`${label} ${active ? "해결 표시 해제" : "해결한 문제로 표시"}`} title={active ? "해결 표시 해제" : "해결한 문제로 표시"}>
+    <span className="check-box" aria-hidden="true">{active && <Check size={14}/>}</span>{detail && (active ? "해결함" : "해결 체크")}
+  </button>;
 }
 
 function FavoriteButton({ active, onClick, label, detail = false }: { active: boolean; onClick: () => void; label: string; detail?: boolean }) {

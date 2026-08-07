@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description: "하루히 감성으로 다시 꾸민, 계산보다 논리를 즐기는 수학 문제 서재",
   applicationName: "SOS 수학서재",
   icons: {
-    icon: "/icon.svg",
+    icon: "/icon.jpg",
     apple: "/apple-icon",
   },
   other: {

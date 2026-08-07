@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 수학의 서재
 
-## Getting Started
+창의적인 수학 문제를 모으고, KaTeX Markdown으로 문제와 여러 풀이를 작성하는 Next.js 문제은행입니다.
 
-First, run the development server:
+## 기능
 
-```bash
+- 문제 그리드/리스트 전환과 전체 텍스트 검색
+- 문제 상세 및 KaTeX 수식 렌더링
+- 문제 추가·수정
+- 한 문제에 여러 풀이 추가·수정
+- PostgreSQL(Neon/Vercel Marketplace) 저장
+- `ADMIN_KEY`를 이용한 쓰기 보호
+- DB가 없는 로컬 환경에서는 메모리 데이터로 즉시 실행
+
+## 로컬 실행
+
+```powershell
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 `http://localhost:3000`을 엽니다. DB를 연결하려면 `.env.example`을 참고해 `.env.local`을 만드세요.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 데이터 모델
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`problems`와 `solutions`는 1:N 관계입니다. 앱은 연결된 DB가 비어 있으면 `src/lib/seed-data.ts`의 기존 문제 6개와 풀이를 자동 등록합니다. 원본 StackEdit 문서는 `content/창의적인 수학문제.md`에 보존했습니다.
 
-## Learn More
+## 배포
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Vercel 프로젝트에 `DATABASE_URL`과 `ADMIN_KEY`를 설정한 후 배포합니다. 읽기는 공개이고 쓰기 작업에만 편집 키가 필요합니다.

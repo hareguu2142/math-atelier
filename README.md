@@ -6,6 +6,7 @@
 
 - 문제 그리드/리스트 전환과 전체 텍스트 검색
 - 문제 상세 및 KaTeX 수식 렌더링
+- `풀이 보기`를 눌렀을 때만 열리는 접이식 풀이
 - 문제 추가·수정
 - 한 문제에 여러 풀이 추가·수정
 - PostgreSQL(Neon/Vercel Marketplace) 저장
@@ -23,7 +24,7 @@ npm run dev
 
 ## 데이터 모델
 
-`problems`와 `solutions`는 1:N 관계입니다. 앱은 연결된 DB가 비어 있으면 `src/lib/seed-data.ts`의 기존 문제 6개와 풀이를 자동 등록합니다. 원본 StackEdit 문서는 `content/창의적인 수학문제.md`에 보존했습니다.
+`problems`와 `solutions`는 1:N 관계입니다. 프로덕션 DB에는 StackEdit의 `창의적인 수학문제`, `창의적인 수학문제2`~`7`에서 분리한 80개 문항이 출처 태그와 함께 등록되어 있습니다. 일곱 원본 전문은 `content/`에 보존했습니다.
 
 ## 배포
 

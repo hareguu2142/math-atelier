@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookOpen, ChevronLeft, Grid2X2, KeyRound, LayoutList, Pencil, Plus, Search, Sparkles, X } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronLeft, Grid2X2, KeyRound, LayoutList, Pencil, Plus, Search, Sparkles, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
 
@@ -105,7 +105,14 @@ export default function MathLibrary() {
 }
 
 function SolutionBlock({ solution, index, onEdit }: { solution: Solution; index: number; onEdit: () => void }) {
-  return <section className="paper solution"><div className="solution-bar"><span className="section-label">SOLUTION {String(index + 1).padStart(2, "0")}</span><button className="ghost" onClick={onEdit}><Pencil size={15}/> 수정</button></div><h3>{solution.title}</h3><Markdown>{solution.contentMarkdown}</Markdown></section>;
+  const [open, setOpen] = useState(false);
+  return <section className={`paper solution ${open ? "is-open" : ""}`}>
+    <div className="solution-bar">
+      <div><span className="section-label">SOLUTION {String(index + 1).padStart(2, "0")}</span><h3>{solution.title}</h3></div>
+      <div className="solution-actions"><button className="reveal" onClick={() => setOpen((value) => !value)} aria-expanded={open}><ChevronDown size={18}/>{open ? "풀이 닫기" : "풀이 보기"}</button><button className="ghost" onClick={onEdit}><Pencil size={15}/> 수정</button></div>
+    </div>
+    {open && <Markdown>{solution.contentMarkdown}</Markdown>}
+  </section>;
 }
 
 function EditorModal({ editor, setEditor, save, error }: { editor: EditorState; setEditor: (value: EditorState | null) => void; save: () => void; error: string }) {

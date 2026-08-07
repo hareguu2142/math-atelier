@@ -14,6 +14,7 @@ export type Problem = {
   difficulty: number;
   tags: string[];
   solved: boolean;
+  favorite: boolean;
   createdAt: string;
   updatedAt: string;
   solutions: Solution[];

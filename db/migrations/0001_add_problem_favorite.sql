@@ -1,0 +1,2 @@
+ALTER TABLE problems
+ADD COLUMN IF NOT EXISTS favorite boolean NOT NULL DEFAULT false;

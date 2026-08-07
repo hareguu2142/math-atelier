@@ -49,7 +49,7 @@ button { color:inherit; }
 .solved-card::after { content:"해결 체크"; }
 .solved-card.active { color:var(--green); }
 .solved-card.active::after { content:"해결함"; }
-.solved-card:disabled,.solved-detail:disabled { cursor:wait; opacity:.7; }
+.solved-card:disabled,.solved-detail:disabled,.favorite-card:disabled,.favorite-detail:disabled { cursor:wait; opacity:.7; }
 .check-box { width:20px; height:20px; border:1.5px solid #56657d; border-radius:6px; display:grid; place-items:center; background:#1d2a3d; transition:.2s ease; }
 .solved-card:hover .check-box,.solved-detail:hover .check-box { border-color:var(--red); }
 .solved-card.active .check-box,.solved-detail.active .check-box { color:white; border-color:var(--green); background:var(--green); }

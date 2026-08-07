@@ -22,9 +22,11 @@ async function ensureSchema() {
       id text PRIMARY KEY, title text NOT NULL, problem_markdown text NOT NULL,
       difficulty integer NOT NULL DEFAULT 2 CHECK (difficulty BETWEEN 1 AND 5),
       tags text[] NOT NULL DEFAULT '{}', solved boolean NOT NULL DEFAULT false,
+      favorite boolean NOT NULL DEFAULT false,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now())`;
     await sql`ALTER TABLE problems ADD COLUMN IF NOT EXISTS solved boolean NOT NULL DEFAULT false`;
+    await sql`ALTER TABLE problems ADD COLUMN IF NOT EXISTS favorite boolean NOT NULL DEFAULT false`;
     await sql`CREATE TABLE IF NOT EXISTS solutions (
       id text PRIMARY KEY, problem_id text NOT NULL REFERENCES problems(id) ON DELETE CASCADE,
       title text NOT NULL, content_markdown text NOT NULL,
@@ -47,7 +49,7 @@ async function ensureSchema() {
 function mapRows(problemRows: Record<string, unknown>[], solutionRows: Record<string, unknown>[]): Problem[] {
   return problemRows.map((row) => ({
     id: String(row.id), title: String(row.title), problemMarkdown: String(row.problem_markdown),
-    difficulty: Number(row.difficulty), tags: (row.tags as string[]) ?? [], solved: Boolean(row.solved),
+    difficulty: Number(row.difficulty), tags: (row.tags as string[]) ?? [], solved: Boolean(row.solved), favorite: Boolean(row.favorite),
     createdAt: new Date(String(row.created_at)).toISOString(), updatedAt: new Date(String(row.updated_at)).toISOString(),
     solutions: solutionRows.filter((s) => s.problem_id === row.id).map((s) => ({
       id: String(s.id), problemId: String(s.problem_id), title: String(s.title),
@@ -75,7 +77,7 @@ export async function listProblems(query = "") {
 }
 
 export async function createProblem(input: ProblemInput) {
-  const problem: Problem = { ...input, id: crypto.randomUUID(), solved: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), solutions: [] };
+  const problem: Problem = { ...input, id: crypto.randomUUID(), solved: false, favorite: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), solutions: [] };
   const sql = sqlClient();
   if (!sql) { memory().problems.unshift(problem); return problem; }
   await ensureSchema();
@@ -106,6 +108,19 @@ export async function updateProblemSolved(id: string, solved: boolean) {
   await ensureSchema();
   const rows = await sql`UPDATE problems SET solved=${solved} WHERE id=${id} RETURNING id, solved`;
   return rows[0] ? { id: String(rows[0].id), solved: Boolean(rows[0].solved) } : null;
+}
+
+export async function updateProblemFavorite(id: string, favorite: boolean) {
+  const sql = sqlClient();
+  if (!sql) {
+    const found = memory().problems.find((problem) => problem.id === id);
+    if (!found) return null;
+    found.favorite = favorite;
+    return { id: found.id, favorite: found.favorite };
+  }
+  await ensureSchema();
+  const rows = await sql`UPDATE problems SET favorite=${favorite} WHERE id=${id} RETURNING id, favorite`;
+  return rows[0] ? { id: String(rows[0].id), favorite: Boolean(rows[0].favorite) } : null;
 }
 
 export async function createSolution(problemId: string, title: string, contentMarkdown: string) {

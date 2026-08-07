@@ -22,26 +22,12 @@ export default function MathLibrary() {
   const [loading, setLoading] = useState(true);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [error, setError] = useState("");
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [pendingFavoriteIds, setPendingFavoriteIds] = useState<Set<string>>(new Set());
   const [pendingSolvedIds, setPendingSolvedIds] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [showUnsolvedOnly, setShowUnsolvedOnly] = useState(false);
+  const migratedLegacyFavorites = useRef(false);
   const migratedLegacySolved = useRef(false);
-
-  useEffect(() => {
-    function readFavorites() {
-      try {
-        const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]");
-        setFavoriteIds(new Set(Array.isArray(favorites) ? favorites.filter((id): id is string => typeof id === "string") : []));
-      } catch {
-        setFavoriteIds(new Set());
-      }
-    }
-
-    readFavorites();
-    window.addEventListener("storage", readFavorites);
-    return () => window.removeEventListener("storage", readFavorites);
-  }, []);
 
   const refresh = useCallback(async (q: string, selectedId?: string) => {
     setLoading(true);
@@ -100,17 +86,50 @@ export default function MathLibrary() {
     });
   }, [loading, query, refresh, selected?.id]);
 
+  useEffect(() => {
+    if (loading || migratedLegacyFavorites.current) return;
+    migratedLegacyFavorites.current = true;
+
+    let legacyIds: string[] = [];
+    try {
+      const stored = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]");
+      legacyIds = Array.isArray(stored) ? stored.filter((id): id is string => typeof id === "string") : [];
+    } catch {
+      localStorage.removeItem(FAVORITES_KEY);
+      return;
+    }
+    if (legacyIds.length === 0) {
+      localStorage.removeItem(FAVORITES_KEY);
+      return;
+    }
+
+    void Promise.all(legacyIds.map(async (id) => {
+      const res = await fetch("/api/problems", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id, favorite: true }),
+      });
+      if (!res.ok && res.status !== 404) throw new Error("Failed to migrate favorite state");
+    })).then(() => {
+      localStorage.removeItem(FAVORITES_KEY);
+      return refresh(query, selected?.id);
+    }).catch(() => {
+      migratedLegacyFavorites.current = false;
+    });
+  }, [loading, query, refresh, selected?.id]);
+
   const stats = useMemo(() => ({
     problems: problems.length,
     solutions: problems.reduce((n, p) => n + p.solutions.length, 0),
     solved: problems.reduce((count, problem) => count + Number(problem.solved), 0),
+    favorites: problems.reduce((count, problem) => count + Number(problem.favorite), 0),
   }), [problems]);
   const visibleProblems = useMemo(
     () => problems.filter((problem) =>
-      (!showFavoritesOnly || favoriteIds.has(problem.id)) &&
+      (!showFavoritesOnly || problem.favorite) &&
       (!showUnsolvedOnly || !problem.solved)
     ),
-    [favoriteIds, problems, showFavoritesOnly, showUnsolvedOnly],
+    [problems, showFavoritesOnly, showUnsolvedOnly],
   );
   const emptyMessage = showFavoritesOnly && showUnsolvedOnly
     ? "즐겨찾기한 미해결 문제가 없습니다."
@@ -120,18 +139,32 @@ export default function MathLibrary() {
         ? "해결하지 못한 문제가 없습니다."
         : "검색 결과가 없습니다.";
 
-  function toggleFavorite(id: string) {
-    setFavoriteIds((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      try {
-        localStorage.setItem(FAVORITES_KEY, JSON.stringify([...next]));
-      } catch {
-        // Storage can be unavailable in private or restricted browser contexts.
-      }
-      return next;
-    });
+  async function toggleFavorite(problem: Problem) {
+    if (pendingFavoriteIds.has(problem.id)) return;
+    const favorite = !problem.favorite;
+    const updateLocalState = (value: boolean) => {
+      setProblems((current) => current.map((item) => item.id === problem.id ? { ...item, favorite: value } : item));
+      setSelected((current) => current?.id === problem.id ? { ...current, favorite: value } : current);
+    };
+
+    setPendingFavoriteIds((current) => new Set(current).add(problem.id));
+    updateLocalState(favorite);
+    try {
+      const res = await fetch("/api/problems", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: problem.id, favorite }),
+      });
+      if (!res.ok) throw new Error("Failed to save favorite state");
+    } catch {
+      updateLocalState(problem.favorite);
+    } finally {
+      setPendingFavoriteIds((current) => {
+        const next = new Set(current);
+        next.delete(problem.id);
+        return next;
+      });
+    }
   }
 
   async function toggleSolved(problem: Problem) {
@@ -198,7 +231,7 @@ export default function MathLibrary() {
           <label className="search"><Search size={19}/><input aria-label="문제 검색" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="제목, 태그, 수식, 풀이 검색"/>{query && <button onClick={() => setQuery("")} aria-label="검색 지우기"><X size={16}/></button>}</label>
           <div className="toolbar-actions">
             <button className={`unsolved-filter ${showUnsolvedOnly ? "active" : ""}`} onClick={() => setShowUnsolvedOnly((value) => !value)} aria-pressed={showUnsolvedOnly}><CircleDashed size={17}/> 미해결 <span>{stats.problems - stats.solved}</span></button>
-            <button className={`favorite-filter ${showFavoritesOnly ? "active" : ""}`} onClick={() => setShowFavoritesOnly((value) => !value)} aria-pressed={showFavoritesOnly}><Star size={17} fill={showFavoritesOnly ? "currentColor" : "none"}/> 즐겨찾기 <span>{favoriteIds.size}</span></button>
+            <button className={`favorite-filter ${showFavoritesOnly ? "active" : ""}`} onClick={() => setShowFavoritesOnly((value) => !value)} aria-pressed={showFavoritesOnly}><Star size={17} fill={showFavoritesOnly ? "currentColor" : "none"}/> 즐겨찾기 <span>{stats.favorites}</span></button>
             <div className="view-switch"><button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} aria-label="그리드 보기"><Grid2X2 size={18}/></button><button className={view === "list" ? "active" : ""} onClick={() => setView("list")} aria-label="리스트 보기"><LayoutList size={19}/></button></div>
           </div>
         </div>
@@ -211,13 +244,13 @@ export default function MathLibrary() {
               <div className="card-foot"><span><BookOpen size={15}/>{problem.solutions.length}개 풀이</span><span>열어보기 →</span></div>
             </button>
             <SolvedButton active={problem.solved} pending={pendingSolvedIds.has(problem.id)} onClick={() => toggleSolved(problem)} label={problem.title}/>
-            <FavoriteButton active={favoriteIds.has(problem.id)} onClick={() => toggleFavorite(problem.id)} label={problem.title}/>
+            <FavoriteButton active={problem.favorite} pending={pendingFavoriteIds.has(problem.id)} onClick={() => toggleFavorite(problem)} label={problem.title}/>
           </article>)}
         </div>
       </section>
     </> : <article className="detail">
       <button className="back" onClick={() => setSelected(null)}><ChevronLeft size={18}/> 모든 문제</button>
-      <div className="detail-head"><div><div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><h1>{selected.title}</h1></div><div className="detail-actions"><SolvedButton active={selected.solved} pending={pendingSolvedIds.has(selected.id)} onClick={() => toggleSolved(selected)} label={selected.title} detail/><FavoriteButton active={favoriteIds.has(selected.id)} onClick={() => toggleFavorite(selected.id)} label={selected.title} detail/><button className="ghost" onClick={() => setEditor({ kind: "problem", id: selected.id, value: { title: selected.title, problemMarkdown: selected.problemMarkdown, tags: selected.tags, difficulty: selected.difficulty } })}><Pencil size={16}/> 문제 수정</button></div></div>
+      <div className="detail-head"><div><div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><h1>{selected.title}</h1></div><div className="detail-actions"><SolvedButton active={selected.solved} pending={pendingSolvedIds.has(selected.id)} onClick={() => toggleSolved(selected)} label={selected.title} detail/><FavoriteButton active={selected.favorite} pending={pendingFavoriteIds.has(selected.id)} onClick={() => toggleFavorite(selected)} label={selected.title} detail/><button className="ghost" onClick={() => setEditor({ kind: "problem", id: selected.id, value: { title: selected.title, problemMarkdown: selected.problemMarkdown, tags: selected.tags, difficulty: selected.difficulty } })}><Pencil size={16}/> 문제 수정</button></div></div>
       <section className="paper"><div className="section-label">PROBLEM</div><Markdown>{selected.problemMarkdown}</Markdown></section>
       <div className="solution-title"><div><p className="eyebrow">SOLUTIONS</p><h2>풀이 {selected.solutions.length}개</h2></div><button className="primary" onClick={() => setEditor({ kind: "solution", problemId: selected.id, title: `풀이 ${selected.solutions.length + 1}`, contentMarkdown: "" })}><Plus size={18}/> 풀이 추가</button></div>
       {selected.solutions.map((solution, i) => <SolutionBlock key={solution.id} solution={solution} index={i} onEdit={() => setEditor({ kind: "solution", id: solution.id, problemId: selected.id, title: solution.title, contentMarkdown: solution.contentMarkdown })}/>)}
@@ -234,8 +267,8 @@ function SolvedButton({ active, pending, onClick, label, detail = false }: { act
   </button>;
 }
 
-function FavoriteButton({ active, onClick, label, detail = false }: { active: boolean; onClick: () => void; label: string; detail?: boolean }) {
-  return <button className={`${detail ? "favorite-detail" : "favorite-card"} ${active ? "active" : ""}`} onClick={onClick} aria-pressed={active} aria-label={`${label} ${active ? "즐겨찾기 해제" : "즐겨찾기 추가"}`} title={active ? "즐겨찾기 해제" : "즐겨찾기 추가"}>
+function FavoriteButton({ active, pending, onClick, label, detail = false }: { active: boolean; pending: boolean; onClick: () => void; label: string; detail?: boolean }) {
+  return <button className={`${detail ? "favorite-detail" : "favorite-card"} ${active ? "active" : ""}`} onClick={onClick} disabled={pending} aria-pressed={active} aria-label={`${label} ${pending ? "즐겨찾기 저장 중" : active ? "즐겨찾기 해제" : "즐겨찾기 추가"}`} title={pending ? "저장 중…" : active ? "즐겨찾기 해제" : "즐겨찾기 추가"}>
     <Star size={detail ? 17 : 19} fill={active ? "currentColor" : "none"}/>{detail && (active ? "즐겨찾는 문제" : "즐겨찾기")}
   </button>;
 }

@@ -4,7 +4,7 @@ const now = "2026-08-07T00:00:00.000Z";
 
 function item(id: string, title: string, problemMarkdown: string, solutionMarkdown: string, tags: string[], difficulty: number): Problem {
   return {
-    id, title, problemMarkdown, tags, difficulty, solved: false, createdAt: now, updatedAt: now,
+    id, title, problemMarkdown, tags, difficulty, solved: false, favorite: false, createdAt: now, updatedAt: now,
     solutions: [{ id: `${id}-solution-1`, problemId: id, title: "기본 풀이", contentMarkdown: solutionMarkdown, createdAt: now, updatedAt: now }],
   };
 }

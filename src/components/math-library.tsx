@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, Check, ChevronDown, ChevronLeft, Grid2X2, LayoutList, Pencil, Plus, Search, Sparkles, Star, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
@@ -11,6 +11,7 @@ type EditorState =
 
 const blank: ProblemInput = { title: "", problemMarkdown: "", difficulty: 2, tags: [] };
 const FAVORITES_KEY = "math-atelier-favorites";
+const LEGACY_SOLVED_KEY = "math-atelier-solved";
 
 export default function MathLibrary() {
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -23,6 +24,7 @@ export default function MathLibrary() {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [pendingSolvedIds, setPendingSolvedIds] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const migratedLegacySolved = useRef(false);
 
   useEffect(() => {
     function readFavorites() {
@@ -63,6 +65,38 @@ export default function MathLibrary() {
     window.addEventListener("focus", syncFromDatabase);
     return () => window.removeEventListener("focus", syncFromDatabase);
   }, [query, refresh, selected?.id]);
+
+  useEffect(() => {
+    if (loading || migratedLegacySolved.current) return;
+    migratedLegacySolved.current = true;
+
+    let legacyIds: string[] = [];
+    try {
+      const stored = JSON.parse(localStorage.getItem(LEGACY_SOLVED_KEY) ?? "[]");
+      legacyIds = Array.isArray(stored) ? stored.filter((id): id is string => typeof id === "string") : [];
+    } catch {
+      localStorage.removeItem(LEGACY_SOLVED_KEY);
+      return;
+    }
+    if (legacyIds.length === 0) {
+      localStorage.removeItem(LEGACY_SOLVED_KEY);
+      return;
+    }
+
+    void Promise.all(legacyIds.map(async (id) => {
+      const res = await fetch("/api/problems", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id, solved: true }),
+      });
+      if (!res.ok && res.status !== 404) throw new Error("Failed to migrate solved state");
+    })).then(() => {
+      localStorage.removeItem(LEGACY_SOLVED_KEY);
+      return refresh(query, selected?.id);
+    }).catch(() => {
+      migratedLegacySolved.current = false;
+    });
+  }, [loading, query, refresh, selected?.id]);
 
   const stats = useMemo(() => ({
     problems: problems.length,

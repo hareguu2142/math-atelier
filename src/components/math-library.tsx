@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { BookOpen, Check, ChevronDown, ChevronLeft, CircleDashed, Grid2X2, LayoutList, Pencil, Plus, Search, Sparkles, Star, X } from "lucide-react";
+import { BookOpen, Check, ChevronDown, ChevronLeft, CircleDashed, Grid2X2, LayoutList, Pencil, Plus, Search, Star, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
 
@@ -184,11 +184,14 @@ export default function MathLibrary() {
     </header>
 
     {!selected ? <>
-      <section className="hero">
-        <p className="eyebrow"><Sparkles size={14}/> SOS단의 문제 지령</p>
-        <h1>답보다 오래 남는<br/><em>좋은 질문</em>을 모읍니다.</h1>
-        <p className="hero-copy">계산보다 논리, 공식보다 발견. 하루히처럼 당당하게 고른 수학 문제와 여러 가지 풀이를 한곳에서 탐색하세요.</p>
-        <div className="stats"><span><strong>{stats.problems}</strong> 문제</span><i/><span><strong>{stats.solutions}</strong> 풀이</span><i/><span><strong>{stats.solved}</strong> 해결</span></div>
+      <section className="hero" aria-label="수학서재 통계">
+        <div className="stats">
+          <span><strong>{stats.problems}</strong> 문제</span>
+          <i aria-hidden="true" />
+          <span><strong>{stats.solutions}</strong> 풀이</span>
+          <i aria-hidden="true" />
+          <span><strong>{stats.solved}</strong> 해결</span>
+        </div>
       </section>
       <section className="library">
         <div className="toolbar">

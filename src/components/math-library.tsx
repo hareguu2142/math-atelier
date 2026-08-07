@@ -99,7 +99,7 @@ export default function MathLibrary() {
       {selected.solutions.map((solution, i) => <SolutionBlock key={solution.id} solution={solution} index={i} onEdit={() => setEditor({ kind: "solution", id: solution.id, problemId: selected.id, title: solution.title, contentMarkdown: solution.contentMarkdown })}/>)}
       {selected.solutions.length === 0 && <div className="empty solution-empty">아직 풀이가 없습니다. 첫 번째 풀이를 남겨보세요.</div>}
     </article>}
-    {editor && <EditorModal editor={editor} setEditor={setEditor} save={save} error={error}/>} 
+    {editor && <EditorModal editor={editor} setEditor={setEditor} save={save} error={error}/>}
     <footer>Math Atelier · 한 문제, 여러 시선</footer>
   </main>;
 }

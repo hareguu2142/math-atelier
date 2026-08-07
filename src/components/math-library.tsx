@@ -179,7 +179,7 @@ export default function MathLibrary() {
 
   return <main>
     <header className="topbar">
-      <button className="brand" onClick={() => setSelected(null)} aria-label="문제 목록으로"><span className="brand-mark"><Image src="/haruhi-mark.svg" alt="" width={40} height={40} /></span><span>SOS 수학서재</span></button>
+      <button className="brand" onClick={() => setSelected(null)} aria-label="문제 목록으로"><span className="brand-mark"><Image src="/icon.jpg" alt="" width={40} height={40} /></span><span>SOS 수학서재</span></button>
       <div className="header-actions"><button className="primary" onClick={() => setEditor({ kind: "problem", value: blank })}><Plus size={18}/> 문제 추가</button></div>
     </header>
 

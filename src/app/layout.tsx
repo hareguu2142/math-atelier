@@ -14,8 +14,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "수학의 서재 | 창의적인 수학 문제 모음",
-  description: "계산보다 논리를 즐기는 문제와 여러 가지 풀이를 모으는 공간",
+  title: "SOS 수학서재 | 창의적인 수학 문제 모음",
+  description: "하루히 감성으로 다시 꾸민, 계산보다 논리를 즐기는 수학 문제 서재",
+  applicationName: "SOS 수학서재",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon",
+  },
+  other: {
+    "theme-color": "#20254D",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

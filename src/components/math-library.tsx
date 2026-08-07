@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { BookOpen, Check, ChevronDown, ChevronLeft, CircleDashed, Grid2X2, LayoutList, Pencil, Plus, Search, Sparkles, Star, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
@@ -178,15 +179,15 @@ export default function MathLibrary() {
 
   return <main>
     <header className="topbar">
-      <button className="brand" onClick={() => setSelected(null)} aria-label="문제 목록으로"><span className="brand-mark">∑</span><span>수학의 서재</span></button>
+      <button className="brand" onClick={() => setSelected(null)} aria-label="문제 목록으로"><span className="brand-mark"><Image src="/haruhi-mark.svg" alt="" width={40} height={40} /></span><span>SOS 수학서재</span></button>
       <div className="header-actions"><button className="primary" onClick={() => setEditor({ kind: "problem", value: blank })}><Plus size={18}/> 문제 추가</button></div>
     </header>
 
     {!selected ? <>
       <section className="hero">
-        <p className="eyebrow"><Sparkles size={14}/> 생각을 여는 문제들</p>
+        <p className="eyebrow"><Sparkles size={14}/> SOS단의 문제 지령</p>
         <h1>답보다 오래 남는<br/><em>좋은 질문</em>을 모읍니다.</h1>
-        <p className="hero-copy">계산보다 논리, 공식보다 발견. 직접 고른 수학 문제와 여러 가지 풀이를 한곳에서 탐색하세요.</p>
+        <p className="hero-copy">계산보다 논리, 공식보다 발견. 하루히처럼 당당하게 고른 수학 문제와 여러 가지 풀이를 한곳에서 탐색하세요.</p>
         <div className="stats"><span><strong>{stats.problems}</strong> 문제</span><i/><span><strong>{stats.solutions}</strong> 풀이</span><i/><span><strong>{stats.solved}</strong> 해결</span></div>
       </section>
       <section className="library">
@@ -220,7 +221,7 @@ export default function MathLibrary() {
       {selected.solutions.length === 0 && <div className="empty solution-empty">아직 풀이가 없습니다. 첫 번째 풀이를 남겨보세요.</div>}
     </article>}
     {editor && <EditorModal editor={editor} setEditor={setEditor} save={save} error={error}/>}
-    <footer>Math Atelier · 한 문제, 여러 시선</footer>
+    <footer>SOS 수학서재 · 한 문제, 여러 시선</footer>
   </main>;
 }
 

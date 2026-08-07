@@ -26,6 +26,11 @@ button { color:inherit; }
 .stats i { width:1px; height:25px; background:var(--line); }
 .library,.detail { width:min(1180px,90vw); margin:0 auto; padding:46px 0 90px; }
 .toolbar { display:flex; align-items:center; gap:18px; justify-content:space-between; margin-bottom:28px; }
+.toolbar-actions,.detail-actions { display:flex; align-items:center; gap:10px; }
+.favorite-filter,.favorite-detail { height:42px; border:1px solid var(--line); border-radius:999px; padding:0 14px; background:#fffdf8; display:inline-flex; align-items:center; gap:7px; cursor:pointer; font-size:13px; font-weight:700; transition:.2s ease; white-space:nowrap; }
+.favorite-filter span { min-width:22px; height:22px; padding:0 6px; border-radius:999px; display:grid; place-items:center; background:#e9e5d9; font-size:11px; }
+.favorite-filter:hover,.favorite-detail:hover { border-color:#91a971; background:white; }
+.favorite-filter.active,.favorite-detail.active { color:var(--green); border-color:#9db36f; background:#eff5dd; }
 .search { height:48px; width:min(620px,80%); display:flex; align-items:center; gap:11px; background:white; border:1px solid var(--line); border-radius:14px; padding:0 15px; box-shadow:0 8px 28px #263a2e0a; }
 .search input { border:0; outline:0; width:100%; background:transparent; }
 .search button { border:0; background:none; cursor:pointer; }
@@ -34,15 +39,19 @@ button { color:inherit; }
 .view-switch .active { background:white; box-shadow:0 2px 8px #00000010; }
 .problem-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
 .problem-list { display:grid; gap:12px; }
-.problem-list .problem-card { display:grid; grid-template-columns:100px 1fr 1.5fr; column-gap:25px; }
+.problem-list .problem-card-main { display:grid; grid-template-columns:100px 1fr 1.5fr; column-gap:25px; }
 .problem-list .card-foot,.problem-list .tag-row { grid-column:2/-1; }
-.problem-card { min-height:310px; padding:25px; border:1px solid var(--line); border-radius:18px; background:#fffdf8; text-align:left; cursor:pointer; display:flex; flex-direction:column; box-shadow:0 8px 24px #263a2e08; transition:.25s ease; overflow:hidden; }
+.problem-card { min-height:310px; border:1px solid var(--line); border-radius:18px; background:#fffdf8; position:relative; box-shadow:0 8px 24px #263a2e08; transition:.25s ease; overflow:hidden; }
+.problem-card-main { width:100%; min-height:308px; height:100%; padding:25px; border:0; background:transparent; text-align:left; cursor:pointer; display:flex; flex-direction:column; }
 .problem-card:hover { transform:translateY(-4px); border-color:#91a971; box-shadow:0 18px 45px #263a2e16; }
+.favorite-card { position:absolute; z-index:2; top:18px; right:18px; width:38px; height:38px; border:1px solid var(--line); border-radius:50%; background:#fffdf8e8; display:grid; place-items:center; color:#758079; cursor:pointer; transition:.2s ease; }
+.favorite-card:hover { color:var(--green); border-color:#91a971; transform:scale(1.06); }
+.favorite-card.active { color:#536f25; background:var(--lime); border-color:#abc46c; }
 .card-top,.card-foot,.solution-bar { display:flex; align-items:center; justify-content:space-between; }
 .number { font:italic 22px Georgia,serif; color:#9da59d; }
-.difficulty { color:#7f9b54; letter-spacing:2px; font-size:11px; }
+.difficulty { color:#7f9b54; letter-spacing:2px; font-size:11px; margin-right:42px; }
 .problem-card h2 { font:600 25px/1.25 Georgia,"Noto Serif KR",serif; letter-spacing:-.025em; margin:25px 0 13px; }
-.problem-card>p { color:var(--muted); line-height:1.65; margin:0 0 18px; font-size:14px; }
+.problem-card-main>p { color:var(--muted); line-height:1.65; margin:0 0 18px; font-size:14px; }
 .tag-row { display:flex; gap:7px; flex-wrap:wrap; margin-top:auto; }
 .tag-row span { padding:6px 10px; border-radius:999px; background:#e9eee7; color:#486052; font-size:11px; font-weight:700; }
 .card-foot { border-top:1px solid #e7e4db; margin-top:20px; padding-top:16px; font-size:12px; color:var(--muted); }
@@ -84,5 +93,5 @@ button { color:inherit; }
 .error { color:#a52d2d; font-weight:700; }
 .modal-actions { justify-content:flex-end; margin-top:22px; }
 footer { border-top:1px solid var(--line); padding:35px; text-align:center; color:#89908c; font:italic 13px Georgia,serif; }
-@media (max-width:850px) { .problem-grid { grid-template-columns:repeat(2,1fr); }.problem-list .problem-card { display:flex; }.hero { padding-top:65px; }.detail-head { flex-direction:column; }.detail-head>.ghost { align-self:flex-end; } }
-@media (max-width:570px) { .topbar { height:66px; }.brand>span:last-child,.header-actions .ghost { display:none; }.hero { min-height:420px; padding:60px 6vw; }.hero h1 { font-size:45px; }.library,.detail { width:92vw; }.problem-grid { grid-template-columns:1fr; }.toolbar { gap:8px; }.search { width:100%; }.paper { padding:27px 21px; }.solution-title { margin-top:55px; }.solution-bar { align-items:flex-start; gap:16px; }.solution-actions { flex-direction:column; align-items:stretch; }.solution-actions .ghost { padding:9px 13px; }.modal { padding:24px 18px; }.form-row { flex-direction:column; gap:0; } }
+@media (max-width:850px) { .problem-grid { grid-template-columns:repeat(2,1fr); }.problem-list .problem-card-main { display:flex; }.hero { padding-top:65px; }.detail-head { flex-direction:column; }.detail-actions { align-self:flex-end; } }
+@media (max-width:570px) { .topbar { height:66px; }.brand>span:last-child,.header-actions .ghost { display:none; }.hero { min-height:420px; padding:60px 6vw; }.hero h1 { font-size:45px; }.library,.detail { width:92vw; }.problem-grid { grid-template-columns:1fr; }.toolbar { align-items:stretch; gap:10px; flex-direction:column; }.toolbar-actions { justify-content:space-between; }.search { width:100%; }.paper { padding:27px 21px; }.solution-title { margin-top:55px; }.solution-bar { align-items:flex-start; gap:16px; }.solution-actions { flex-direction:column; align-items:stretch; }.solution-actions .ghost { padding:9px 13px; }.detail-actions { align-self:stretch; flex-wrap:wrap; }.modal { padding:24px 18px; }.form-row { flex-direction:column; gap:0; } }

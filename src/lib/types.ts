@@ -13,10 +13,10 @@ export type Problem = {
   problemMarkdown: string;
   difficulty: number;
   tags: string[];
+  solved: boolean;
   createdAt: string;
   updatedAt: string;
   solutions: Solution[];
 };
 
 export type ProblemInput = Pick<Problem, "title" | "problemMarkdown" | "difficulty" | "tags">;
-

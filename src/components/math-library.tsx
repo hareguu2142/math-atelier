@@ -11,7 +11,6 @@ type EditorState =
 
 const blank: ProblemInput = { title: "", problemMarkdown: "", difficulty: 2, tags: [] };
 const FAVORITES_KEY = "math-atelier-favorites";
-const SOLVED_KEY = "math-atelier-solved";
 
 export default function MathLibrary() {
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -22,30 +21,27 @@ export default function MathLibrary() {
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [error, setError] = useState("");
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
+  const [pendingSolvedIds, setPendingSolvedIds] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   useEffect(() => {
-    function readSavedProblemIds() {
+    function readFavorites() {
       try {
         const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]");
-        const solved = JSON.parse(localStorage.getItem(SOLVED_KEY) ?? "[]");
         setFavoriteIds(new Set(Array.isArray(favorites) ? favorites.filter((id): id is string => typeof id === "string") : []));
-        setSolvedIds(new Set(Array.isArray(solved) ? solved.filter((id): id is string => typeof id === "string") : []));
       } catch {
         setFavoriteIds(new Set());
-        setSolvedIds(new Set());
       }
     }
 
-    readSavedProblemIds();
-    window.addEventListener("storage", readSavedProblemIds);
-    return () => window.removeEventListener("storage", readSavedProblemIds);
+    readFavorites();
+    window.addEventListener("storage", readFavorites);
+    return () => window.removeEventListener("storage", readFavorites);
   }, []);
 
   const refresh = useCallback(async (q: string, selectedId?: string) => {
     setLoading(true);
-    const res = await fetch(`/api/problems?q=${encodeURIComponent(q)}`);
+    const res = await fetch(`/api/problems?q=${encodeURIComponent(q)}`, { cache: "no-store" });
     const data: Problem[] = await res.json();
     setProblems(data);
     if (selectedId) setSelected(data.find((p) => p.id === selectedId) ?? null);
@@ -55,18 +51,24 @@ export default function MathLibrary() {
   useEffect(() => {
     const timer = setTimeout(async () => {
       setLoading(true);
-      const res = await fetch(`/api/problems?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`/api/problems?q=${encodeURIComponent(query)}`, { cache: "no-store" });
       setProblems(await res.json());
       setLoading(false);
     }, query ? 220 : 0);
     return () => clearTimeout(timer);
   }, [query]);
 
+  useEffect(() => {
+    const syncFromDatabase = () => void refresh(query, selected?.id);
+    window.addEventListener("focus", syncFromDatabase);
+    return () => window.removeEventListener("focus", syncFromDatabase);
+  }, [query, refresh, selected?.id]);
+
   const stats = useMemo(() => ({
     problems: problems.length,
     solutions: problems.reduce((n, p) => n + p.solutions.length, 0),
-    solved: problems.reduce((count, problem) => count + Number(solvedIds.has(problem.id)), 0),
-  }), [problems, solvedIds]);
+    solved: problems.reduce((count, problem) => count + Number(problem.solved), 0),
+  }), [problems]);
   const visibleProblems = useMemo(
     () => showFavoritesOnly ? problems.filter((problem) => favoriteIds.has(problem.id)) : problems,
     [favoriteIds, problems, showFavoritesOnly],
@@ -86,18 +88,32 @@ export default function MathLibrary() {
     });
   }
 
-  function toggleSolved(id: string) {
-    setSolvedIds((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      try {
-        localStorage.setItem(SOLVED_KEY, JSON.stringify([...next]));
-      } catch {
-        // Storage can be unavailable in private or restricted browser contexts.
-      }
-      return next;
-    });
+  async function toggleSolved(problem: Problem) {
+    if (pendingSolvedIds.has(problem.id)) return;
+    const solved = !problem.solved;
+    const updateLocalState = (value: boolean) => {
+      setProblems((current) => current.map((item) => item.id === problem.id ? { ...item, solved: value } : item));
+      setSelected((current) => current?.id === problem.id ? { ...current, solved: value } : current);
+    };
+
+    setPendingSolvedIds((current) => new Set(current).add(problem.id));
+    updateLocalState(solved);
+    try {
+      const res = await fetch("/api/problems", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: problem.id, solved }),
+      });
+      if (!res.ok) throw new Error("Failed to save solved state");
+    } catch {
+      updateLocalState(problem.solved);
+    } finally {
+      setPendingSolvedIds((current) => {
+        const next = new Set(current);
+        next.delete(problem.id);
+        return next;
+      });
+    }
   }
 
   async function save() {
@@ -137,21 +153,21 @@ export default function MathLibrary() {
           </div>
         </div>
         <div className={`problem-${view}`}>
-          {loading ? <p className="empty">문제를 펼치는 중…</p> : visibleProblems.length === 0 ? <p className="empty">{showFavoritesOnly ? "즐겨찾기한 문제가 없습니다." : "검색 결과가 없습니다."}</p> : visibleProblems.map((problem, index) => <article className={`problem-card ${solvedIds.has(problem.id) ? "is-solved" : ""}`} key={problem.id}>
+          {loading ? <p className="empty">문제를 펼치는 중…</p> : visibleProblems.length === 0 ? <p className="empty">{showFavoritesOnly ? "즐겨찾기한 문제가 없습니다." : "검색 결과가 없습니다."}</p> : visibleProblems.map((problem, index) => <article className={`problem-card ${problem.solved ? "is-solved" : ""}`} key={problem.id}>
             <button className="problem-card-main" onClick={() => setSelected(problem)}>
               <div className="card-top"><span className="number">{String(index + 1).padStart(2, "0")}</span><span className="difficulty">{"●".repeat(problem.difficulty)}{"○".repeat(5 - problem.difficulty)}</span></div>
               <h2>{problem.title}</h2><p>{problem.problemMarkdown.replace(/[$#*`>\\]/g, " ").replace(/\s+/g, " ").slice(0, 112)}…</p>
               <div className="tag-row">{problem.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>
               <div className="card-foot"><span><BookOpen size={15}/>{problem.solutions.length}개 풀이</span><span>열어보기 →</span></div>
             </button>
-            <SolvedButton active={solvedIds.has(problem.id)} onClick={() => toggleSolved(problem.id)} label={problem.title}/>
+            <SolvedButton active={problem.solved} pending={pendingSolvedIds.has(problem.id)} onClick={() => toggleSolved(problem)} label={problem.title}/>
             <FavoriteButton active={favoriteIds.has(problem.id)} onClick={() => toggleFavorite(problem.id)} label={problem.title}/>
           </article>)}
         </div>
       </section>
     </> : <article className="detail">
       <button className="back" onClick={() => setSelected(null)}><ChevronLeft size={18}/> 모든 문제</button>
-      <div className="detail-head"><div><div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><h1>{selected.title}</h1></div><div className="detail-actions"><SolvedButton active={solvedIds.has(selected.id)} onClick={() => toggleSolved(selected.id)} label={selected.title} detail/><FavoriteButton active={favoriteIds.has(selected.id)} onClick={() => toggleFavorite(selected.id)} label={selected.title} detail/><button className="ghost" onClick={() => setEditor({ kind: "problem", id: selected.id, value: { title: selected.title, problemMarkdown: selected.problemMarkdown, tags: selected.tags, difficulty: selected.difficulty } })}><Pencil size={16}/> 문제 수정</button></div></div>
+      <div className="detail-head"><div><div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><h1>{selected.title}</h1></div><div className="detail-actions"><SolvedButton active={selected.solved} pending={pendingSolvedIds.has(selected.id)} onClick={() => toggleSolved(selected)} label={selected.title} detail/><FavoriteButton active={favoriteIds.has(selected.id)} onClick={() => toggleFavorite(selected.id)} label={selected.title} detail/><button className="ghost" onClick={() => setEditor({ kind: "problem", id: selected.id, value: { title: selected.title, problemMarkdown: selected.problemMarkdown, tags: selected.tags, difficulty: selected.difficulty } })}><Pencil size={16}/> 문제 수정</button></div></div>
       <section className="paper"><div className="section-label">PROBLEM</div><Markdown>{selected.problemMarkdown}</Markdown></section>
       <div className="solution-title"><div><p className="eyebrow">SOLUTIONS</p><h2>풀이 {selected.solutions.length}개</h2></div><button className="primary" onClick={() => setEditor({ kind: "solution", problemId: selected.id, title: `풀이 ${selected.solutions.length + 1}`, contentMarkdown: "" })}><Plus size={18}/> 풀이 추가</button></div>
       {selected.solutions.map((solution, i) => <SolutionBlock key={solution.id} solution={solution} index={i} onEdit={() => setEditor({ kind: "solution", id: solution.id, problemId: selected.id, title: solution.title, contentMarkdown: solution.contentMarkdown })}/>)}
@@ -162,8 +178,8 @@ export default function MathLibrary() {
   </main>;
 }
 
-function SolvedButton({ active, onClick, label, detail = false }: { active: boolean; onClick: () => void; label: string; detail?: boolean }) {
-  return <button className={`${detail ? "solved-detail" : "solved-card"} ${active ? "active" : ""}`} onClick={onClick} aria-pressed={active} aria-label={`${label} ${active ? "해결 표시 해제" : "해결한 문제로 표시"}`} title={active ? "해결 표시 해제" : "해결한 문제로 표시"}>
+function SolvedButton({ active, pending, onClick, label, detail = false }: { active: boolean; pending: boolean; onClick: () => void; label: string; detail?: boolean }) {
+  return <button className={`${detail ? "solved-detail" : "solved-card"} ${active ? "active" : ""}`} onClick={onClick} disabled={pending} aria-pressed={active} aria-label={`${label} ${pending ? "해결 상태 저장 중" : active ? "해결 표시 해제" : "해결한 문제로 표시"}`} title={pending ? "저장 중…" : active ? "해결 표시 해제" : "해결한 문제로 표시"}>
     <span className="check-box" aria-hidden="true">{active && <Check size={14}/>}</span>{detail && (active ? "해결함" : "해결 체크")}
   </button>;
 }

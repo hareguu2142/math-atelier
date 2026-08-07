@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS problems (
   problem_markdown text NOT NULL,
   difficulty integer NOT NULL DEFAULT 2 CHECK (difficulty BETWEEN 1 AND 5),
   tags text[] NOT NULL DEFAULT '{}',
+  solved boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -18,4 +19,3 @@ CREATE TABLE IF NOT EXISTS solutions (
 );
 
 CREATE INDEX IF NOT EXISTS solutions_problem_id_idx ON solutions(problem_id);
-

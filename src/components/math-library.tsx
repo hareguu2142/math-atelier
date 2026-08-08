@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { BookOpen, Check, ChevronDown, ChevronLeft, CircleDashed, Grid2X2, LayoutList, Pencil, Plus, Search, Star, X } from "lucide-react";
+import { BookOpen, Check, ChevronDown, ChevronLeft, CircleDashed, Copy, Grid2X2, LayoutList, Pencil, Plus, Search, Star, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
 
@@ -251,7 +251,7 @@ export default function MathLibrary() {
     </> : <article className="detail">
       <button className="back" onClick={() => setSelected(null)}><ChevronLeft size={18}/> 모든 문제</button>
       <div className="detail-head"><div><div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><h1>{selected.title}</h1></div><div className="detail-actions"><SolvedButton active={selected.solved} pending={pendingSolvedIds.has(selected.id)} onClick={() => toggleSolved(selected)} label={selected.title} detail/><FavoriteButton active={selected.favorite} pending={pendingFavoriteIds.has(selected.id)} onClick={() => toggleFavorite(selected)} label={selected.title} detail/><button className="ghost" onClick={() => setEditor({ kind: "problem", id: selected.id, value: { title: selected.title, problemMarkdown: selected.problemMarkdown, tags: selected.tags, difficulty: selected.difficulty } })}><Pencil size={16}/> 문제 수정</button></div></div>
-      <section className="paper"><div className="section-label">PROBLEM</div><Markdown>{selected.problemMarkdown}</Markdown></section>
+      <section className="paper"><div className="paper-top"><div className="section-label">PROBLEM</div><CopyKatexButton content={selected.problemMarkdown} label="문제 KaTeX 복사"/></div><Markdown>{selected.problemMarkdown}</Markdown></section>
       <div className="solution-title"><div><p className="eyebrow">SOLUTIONS</p><h2>풀이 {selected.solutions.length}개</h2></div><button className="primary" onClick={() => setEditor({ kind: "solution", problemId: selected.id, title: `풀이 ${selected.solutions.length + 1}`, contentMarkdown: "" })}><Plus size={18}/> 풀이 추가</button></div>
       {selected.solutions.map((solution, i) => <SolutionBlock key={solution.id} solution={solution} index={i} onEdit={() => setEditor({ kind: "solution", id: solution.id, problemId: selected.id, title: solution.title, contentMarkdown: solution.contentMarkdown })}/>)}
       {selected.solutions.length === 0 && <div className="empty solution-empty">아직 풀이가 없습니다. 첫 번째 풀이를 남겨보세요.</div>}
@@ -278,10 +278,30 @@ function SolutionBlock({ solution, index, onEdit }: { solution: Solution; index:
   return <section className={`paper solution ${open ? "is-open" : ""}`}>
     <div className="solution-bar">
       <div><span className="section-label">SOLUTION {String(index + 1).padStart(2, "0")}</span><h3>{solution.title}</h3></div>
-      <div className="solution-actions"><button className="reveal" onClick={() => setOpen((value) => !value)} aria-expanded={open}><ChevronDown size={18}/>{open ? "풀이 닫기" : "풀이 보기"}</button><button className="ghost" onClick={onEdit}><Pencil size={15}/> 수정</button></div>
+      <div className="solution-actions"><button className="reveal" onClick={() => setOpen((value) => !value)} aria-expanded={open}><ChevronDown size={18}/>{open ? "풀이 닫기" : "풀이 보기"}</button><CopyKatexButton content={solution.contentMarkdown} label="풀이 KaTeX 복사"/><button className="ghost" onClick={onEdit}><Pencil size={15}/> 수정</button></div>
     </div>
     {open && <Markdown>{solution.contentMarkdown}</Markdown>}
   </section>;
+}
+
+function CopyKatexButton({ content, label }: { content: string; label: string }) {
+  const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(content);
+      setStatus("copied");
+      window.setTimeout(() => setStatus("idle"), 1800);
+    } catch {
+      setStatus("error");
+      window.setTimeout(() => setStatus("idle"), 1800);
+    }
+  }
+
+  const message = status === "copied" ? "복사됨" : status === "error" ? "복사 실패" : label;
+  return <button className={`copy-katex ${status}`} onClick={copy} type="button" aria-label={label} title={label}>
+    {status === "copied" ? <Check size={15}/> : <Copy size={15}/>}<span>{message}</span>
+  </button>;
 }
 
 function EditorModal({ editor, setEditor, save, error }: { editor: EditorState; setEditor: (value: EditorState | null) => void; save: () => void; error: string }) {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { BookOpen, Check, ChevronDown, ChevronLeft, CircleDashed, Copy, Grid2X2, LayoutList, Pencil, Plus, Search, Star, Trash2, X } from "lucide-react";
+import { BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, CircleDashed, Copy, Grid2X2, LayoutList, Pencil, Plus, Search, Star, Trash2, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
 
@@ -13,6 +13,7 @@ type EditorState =
 const blank: ProblemInput = { title: "", problemMarkdown: "", difficulty: 2, tags: [] };
 const FAVORITES_KEY = "math-atelier-favorites";
 const LEGACY_SOLVED_KEY = "math-atelier-solved";
+const PROBLEMS_PER_PAGE = 12;
 
 export default function MathLibrary() {
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -29,6 +30,8 @@ export default function MathLibrary() {
   const [pendingSolvedIds, setPendingSolvedIds] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [showUnsolvedOnly, setShowUnsolvedOnly] = useState(false);
+  const [page, setPage] = useState(1);
+  const libraryRef = useRef<HTMLElement>(null);
   const migratedLegacyFavorites = useRef(false);
   const migratedLegacySolved = useRef(false);
 
@@ -134,6 +137,10 @@ export default function MathLibrary() {
     ),
     [problems, showFavoritesOnly, showUnsolvedOnly],
   );
+  const totalPages = Math.max(1, Math.ceil(visibleProblems.length / PROBLEMS_PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PROBLEMS_PER_PAGE;
+  const paginatedProblems = visibleProblems.slice(pageStart, pageStart + PROBLEMS_PER_PAGE);
   const emptyMessage = showFavoritesOnly && showUnsolvedOnly
     ? "즐겨찾기한 미해결 문제가 없습니다."
     : showFavoritesOnly
@@ -141,6 +148,14 @@ export default function MathLibrary() {
       : showUnsolvedOnly
         ? "해결하지 못한 문제가 없습니다."
         : "검색 결과가 없습니다.";
+
+  function changePage(nextPage: number) {
+    setPage(nextPage);
+    requestAnimationFrame(() => {
+      const top = libraryRef.current?.offsetTop;
+      if (top !== undefined) window.scrollTo({ top: Math.max(0, top - 92), behavior: "smooth" });
+    });
+  }
 
   async function toggleFavorite(problem: Problem) {
     if (pendingFavoriteIds.has(problem.id)) return;
@@ -253,19 +268,19 @@ export default function MathLibrary() {
           <span><strong>{stats.solved}</strong> 해결</span>
         </div>
       </section>
-      <section className="library">
+      <section className="library" ref={libraryRef}>
         <div className="toolbar">
-          <label className="search"><Search size={19}/><input aria-label="문제 검색" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="제목, 태그, 수식, 풀이 검색"/>{query && <button onClick={() => setQuery("")} aria-label="검색 지우기"><X size={16}/></button>}</label>
+          <label className="search"><Search size={19}/><input aria-label="문제 검색" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="제목, 태그, 수식, 풀이 검색"/>{query && <button onClick={() => { setQuery(""); setPage(1); }} aria-label="검색 지우기"><X size={16}/></button>}</label>
           <div className="toolbar-actions">
-            <button className={`unsolved-filter ${showUnsolvedOnly ? "active" : ""}`} onClick={() => setShowUnsolvedOnly((value) => !value)} aria-pressed={showUnsolvedOnly}><CircleDashed size={17}/> 미해결 <span>{stats.problems - stats.solved}</span></button>
-            <button className={`favorite-filter ${showFavoritesOnly ? "active" : ""}`} onClick={() => setShowFavoritesOnly((value) => !value)} aria-pressed={showFavoritesOnly}><Star size={17} fill={showFavoritesOnly ? "currentColor" : "none"}/> 즐겨찾기 <span>{stats.favorites}</span></button>
+            <button className={`unsolved-filter ${showUnsolvedOnly ? "active" : ""}`} onClick={() => { setShowUnsolvedOnly((value) => !value); setPage(1); }} aria-pressed={showUnsolvedOnly}><CircleDashed size={17}/> 미해결 <span>{stats.problems - stats.solved}</span></button>
+            <button className={`favorite-filter ${showFavoritesOnly ? "active" : ""}`} onClick={() => { setShowFavoritesOnly((value) => !value); setPage(1); }} aria-pressed={showFavoritesOnly}><Star size={17} fill={showFavoritesOnly ? "currentColor" : "none"}/> 즐겨찾기 <span>{stats.favorites}</span></button>
             <div className="view-switch"><button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} aria-label="그리드 보기"><Grid2X2 size={18}/></button><button className={view === "list" ? "active" : ""} onClick={() => setView("list")} aria-label="리스트 보기"><LayoutList size={19}/></button></div>
           </div>
         </div>
         <div className={`problem-${view}`}>
-          {loading ? <p className="empty">문제를 펼치는 중…</p> : visibleProblems.length === 0 ? <p className="empty">{emptyMessage}</p> : visibleProblems.map((problem, index) => <article className={`problem-card ${problem.solved ? "is-solved" : ""}`} key={problem.id}>
+          {loading ? <p className="empty">문제를 펼치는 중…</p> : visibleProblems.length === 0 ? <p className="empty">{emptyMessage}</p> : paginatedProblems.map((problem, index) => <article className={`problem-card ${problem.solved ? "is-solved" : ""}`} key={problem.id}>
             <button className="problem-card-main" onClick={() => setSelected(problem)}>
-              <div className="card-top"><span className="number">{String(index + 1).padStart(2, "0")}</span><span className="difficulty">{"●".repeat(problem.difficulty)}{"○".repeat(5 - problem.difficulty)}</span></div>
+              <div className="card-top"><span className="number">{String(pageStart + index + 1).padStart(2, "0")}</span><span className="difficulty">{"●".repeat(problem.difficulty)}{"○".repeat(5 - problem.difficulty)}</span></div>
               <h2>{problem.title}</h2><p>{problem.problemMarkdown.replace(/[$#*`>\\]/g, " ").replace(/\s+/g, " ").slice(0, 112)}…</p>
               <div className="tag-row">{problem.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>
               <div className="card-foot"><span><BookOpen size={15}/>{problem.solutions.length}개 풀이</span><span>열어보기 →</span></div>
@@ -274,6 +289,11 @@ export default function MathLibrary() {
             <FavoriteButton active={problem.favorite} pending={pendingFavoriteIds.has(problem.id)} onClick={() => toggleFavorite(problem)} label={problem.title}/>
           </article>)}
         </div>
+        {!loading && totalPages > 1 && <nav className="pagination" aria-label="문제 목록 페이지">
+          <button onClick={() => changePage(currentPage - 1)} disabled={currentPage === 1} aria-label="이전 페이지"><ChevronLeft size={18}/><span>이전</span></button>
+          <span className="page-status"><strong>{currentPage}</strong> / {totalPages}</span>
+          <button onClick={() => changePage(currentPage + 1)} disabled={currentPage === totalPages} aria-label="다음 페이지"><span>다음</span><ChevronRight size={18}/></button>
+        </nav>}
       </section>
     </> : <article className="detail">
       <button className="back" onClick={() => setSelected(null)}><ChevronLeft size={18}/> 모든 문제</button>

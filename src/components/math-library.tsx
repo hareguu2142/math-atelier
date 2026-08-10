@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { BookOpen, Check, ChevronDown, ChevronLeft, CircleDashed, Copy, Grid2X2, LayoutList, Pencil, Plus, Search, Star, X } from "lucide-react";
+import { BookOpen, Check, ChevronDown, ChevronLeft, CircleDashed, Copy, Grid2X2, LayoutList, Pencil, Plus, Search, Star, Trash2, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
 
@@ -22,6 +22,9 @@ export default function MathLibrary() {
   const [loading, setLoading] = useState(true);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [error, setError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Problem | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const [pendingFavoriteIds, setPendingFavoriteIds] = useState<Set<string>>(new Set());
   const [pendingSolvedIds, setPendingSolvedIds] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -210,6 +213,30 @@ export default function MathLibrary() {
     await refresh(query, selectedId);
   }
 
+  async function removeProblem() {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await fetch("/api/problems", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: deleteTarget.id }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "문제를 삭제하지 못했습니다.");
+      }
+      setProblems((current) => current.filter((problem) => problem.id !== deleteTarget.id));
+      setSelected(null);
+      setDeleteTarget(null);
+    } catch (caught) {
+      setDeleteError(caught instanceof Error ? caught.message : "문제를 삭제하지 못했습니다.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return <main>
     <header className="topbar">
       <button className="brand" onClick={() => setSelected(null)} aria-label="문제 목록으로"><span className="brand-mark"><Image src="/icon.jpg" alt="" width={40} height={40} /></span><span>SOS 수학서재</span></button>
@@ -250,15 +277,26 @@ export default function MathLibrary() {
       </section>
     </> : <article className="detail">
       <button className="back" onClick={() => setSelected(null)}><ChevronLeft size={18}/> 모든 문제</button>
-      <div className="detail-head"><div><div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><h1>{selected.title}</h1></div><div className="detail-actions"><SolvedButton active={selected.solved} pending={pendingSolvedIds.has(selected.id)} onClick={() => toggleSolved(selected)} label={selected.title} detail/><FavoriteButton active={selected.favorite} pending={pendingFavoriteIds.has(selected.id)} onClick={() => toggleFavorite(selected)} label={selected.title} detail/><button className="ghost" onClick={() => setEditor({ kind: "problem", id: selected.id, value: { title: selected.title, problemMarkdown: selected.problemMarkdown, tags: selected.tags, difficulty: selected.difficulty } })}><Pencil size={16}/> 문제 수정</button></div></div>
+      <div className="detail-head"><div><div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><h1>{selected.title}</h1></div><div className="detail-actions"><SolvedButton active={selected.solved} pending={pendingSolvedIds.has(selected.id)} onClick={() => toggleSolved(selected)} label={selected.title} detail/><FavoriteButton active={selected.favorite} pending={pendingFavoriteIds.has(selected.id)} onClick={() => toggleFavorite(selected)} label={selected.title} detail/><button className="ghost" onClick={() => setEditor({ kind: "problem", id: selected.id, value: { title: selected.title, problemMarkdown: selected.problemMarkdown, tags: selected.tags, difficulty: selected.difficulty } })}><Pencil size={16}/> 문제 수정</button><button className="danger" onClick={() => { setDeleteError(""); setDeleteTarget(selected); }}><Trash2 size={16}/> 문제 삭제</button></div></div>
       <section className="paper"><div className="paper-top"><div className="section-label">PROBLEM</div><CopyKatexButton content={selected.problemMarkdown} label="문제 KaTeX 복사"/></div><Markdown>{selected.problemMarkdown}</Markdown></section>
       <div className="solution-title"><div><p className="eyebrow">SOLUTIONS</p><h2>풀이 {selected.solutions.length}개</h2></div><button className="primary" onClick={() => setEditor({ kind: "solution", problemId: selected.id, title: `풀이 ${selected.solutions.length + 1}`, contentMarkdown: "" })}><Plus size={18}/> 풀이 추가</button></div>
       {selected.solutions.map((solution, i) => <SolutionBlock key={solution.id} solution={solution} index={i} onEdit={() => setEditor({ kind: "solution", id: solution.id, problemId: selected.id, title: solution.title, contentMarkdown: solution.contentMarkdown })}/>)}
       {selected.solutions.length === 0 && <div className="empty solution-empty">아직 풀이가 없습니다. 첫 번째 풀이를 남겨보세요.</div>}
     </article>}
     {editor && <EditorModal editor={editor} setEditor={setEditor} save={save} error={error}/>}
+    {deleteTarget && <DeleteProblemModal problem={deleteTarget} deleting={deleting} error={deleteError} onCancel={() => setDeleteTarget(null)} onDelete={removeProblem}/>}
     <footer>SOS 수학서재 · 한 문제, 여러 시선</footer>
   </main>;
+}
+
+function DeleteProblemModal({ problem, deleting, error, onCancel, onDelete }: { problem: Problem; deleting: boolean; error: string; onCancel: () => void; onDelete: () => void }) {
+  return <div className="modal-backdrop"><div className="modal confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-description">
+    <div className="delete-icon" aria-hidden="true"><Trash2 size={24}/></div>
+    <h2 id="delete-title">문제를 삭제할까요?</h2>
+    <p id="delete-description"><strong>“{problem.title}”</strong> 문제와 등록된 풀이 {problem.solutions.length}개가 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+    {error && <p className="error" role="alert">{error}</p>}
+    <div className="modal-actions"><button className="ghost" onClick={onCancel} disabled={deleting}>취소</button><button className="danger danger-solid" onClick={onDelete} disabled={deleting}>{deleting ? "삭제 중…" : "삭제하기"}</button></div>
+  </div></div>;
 }
 
 function SolvedButton({ active, pending, onClick, label, detail = false }: { active: boolean; pending: boolean; onClick: () => void; label: string; detail?: boolean }) {

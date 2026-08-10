@@ -123,6 +123,19 @@ export async function updateProblemFavorite(id: string, favorite: boolean) {
   return rows[0] ? { id: String(rows[0].id), favorite: Boolean(rows[0].favorite) } : null;
 }
 
+export async function deleteProblem(id: string) {
+  const sql = sqlClient();
+  if (!sql) {
+    const index = memory().problems.findIndex((problem) => problem.id === id);
+    if (index === -1) return false;
+    memory().problems.splice(index, 1);
+    return true;
+  }
+  await ensureSchema();
+  const rows = await sql`DELETE FROM problems WHERE id=${id} RETURNING id`;
+  return rows.length > 0;
+}
+
 export async function createSolution(problemId: string, title: string, contentMarkdown: string) {
   const solution: Solution = { id: crypto.randomUUID(), problemId, title, contentMarkdown, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   const sql = sqlClient();

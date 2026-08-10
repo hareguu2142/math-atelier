@@ -1,4 +1,4 @@
-import { createProblem, listProblems, updateProblem, updateProblemFavorite, updateProblemSolved } from "@/lib/store";
+import { createProblem, deleteProblem, listProblems, updateProblem, updateProblemFavorite, updateProblemSolved } from "@/lib/store";
 
 export async function GET(request: Request) {
   return Response.json(await listProblems(new URL(request.url).searchParams.get("q") ?? ""));
@@ -27,4 +27,14 @@ export async function PATCH(request: Request) {
   }
   const result = await updateProblem(id, input);
   return result ? Response.json(result) : Response.json({ error: "문제를 찾을 수 없습니다." }, { status: 404 });
+}
+
+export async function DELETE(request: Request) {
+  const { id } = await request.json();
+  if (typeof id !== "string" || !id) {
+    return Response.json({ error: "삭제할 문제가 필요합니다." }, { status: 400 });
+  }
+  return await deleteProblem(id)
+    ? new Response(null, { status: 204 })
+    : Response.json({ error: "문제를 찾을 수 없습니다." }, { status: 404 });
 }

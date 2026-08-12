@@ -336,21 +336,16 @@ function SolutionBlock({ solution, index, problem, onEdit }: { solution: Solutio
   return <section className={`paper solution ${open ? "is-open" : ""}`}>
     <div className="solution-bar">
       <div><span className="section-label">SOLUTION {String(index + 1).padStart(2, "0")}</span><h3>{solution.title}</h3></div>
-      <div className="solution-actions"><button className="reveal" onClick={() => setOpen((value) => !value)} aria-expanded={open}><ChevronDown size={18}/>{open ? "풀이 닫기" : "풀이 보기"}</button><CopyKatexButton content={solution.contentMarkdown} label="풀이 KaTeX 복사"/><PngExportButton filename={`풀이-${problem.title}-${solution.title}`} label="풀이 PNG 저장"><ExportCard kind="solution" problem={problem} solution={solution} index={index}/></PngExportButton><button className="ghost" onClick={onEdit}><Pencil size={15}/> 수정</button></div>
+      <div className="solution-actions"><button className="reveal" onClick={() => setOpen((value) => !value)} aria-expanded={open}><ChevronDown size={18}/>{open ? "풀이 닫기" : "풀이 보기"}</button><CopyKatexButton content={solution.contentMarkdown} label="풀이 KaTeX 복사"/><PngExportButton filename={`풀이-${problem.title}-${solution.title}`} label="풀이 PNG 저장"><ExportCard kind="solution" problem={problem} solution={solution}/></PngExportButton><button className="ghost" onClick={onEdit}><Pencil size={15}/> 수정</button></div>
     </div>
     {open && <Markdown>{solution.contentMarkdown}</Markdown>}
   </section>;
 }
 
-function ExportCard({ kind, problem, solution, index = 0 }: { kind: "problem" | "solution"; problem: Problem; solution?: Solution; index?: number }) {
+function ExportCard({ kind, problem, solution }: { kind: "problem" | "solution"; problem: Problem; solution?: Solution }) {
   return <article className="export-card">
-    <header className="export-card-head">
-      <div className="export-brand"><span className="export-brand-mark">∑</span><span>SOS 수학서재</span></div>
-      <span className="export-kind">{kind === "problem" ? "PROBLEM" : `SOLUTION ${String(index + 1).padStart(2, "0")}`}</span>
-    </header>
     <div className="export-card-body">
       {kind === "problem" ? <>
-        <div className="export-meta"><span>난이도 {"●".repeat(problem.difficulty)}{"○".repeat(5 - problem.difficulty)}</span>{problem.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
         <h1>{problem.title}</h1>
         <Markdown>{problem.problemMarkdown}</Markdown>
       </> : <>
@@ -359,7 +354,6 @@ function ExportCard({ kind, problem, solution, index = 0 }: { kind: "problem" | 
         {solution && <Markdown>{solution.contentMarkdown}</Markdown>}
       </>}
     </div>
-    <footer className="export-card-foot"><span>한 문제, 여러 시선</span><span>math atelier</span></footer>
   </article>;
 }
 

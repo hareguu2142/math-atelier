@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, CircleDashed, Copy, Grid2X2, LayoutList, Pencil, Plus, Search, Star, Trash2, X } from "lucide-react";
+import { BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, CircleDashed, Copy, Download, Grid2X2, LayoutList, Loader2, Pencil, Plus, Search, Star, Trash2, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
 
@@ -298,9 +298,9 @@ export default function MathLibrary() {
     </> : <article className="detail">
       <button className="back" onClick={() => setSelected(null)}><ChevronLeft size={18}/> 모든 문제</button>
       <div className="detail-head"><div><div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><h1>{selected.title}</h1></div><div className="detail-actions"><SolvedButton active={selected.solved} pending={pendingSolvedIds.has(selected.id)} onClick={() => toggleSolved(selected)} label={selected.title} detail/><FavoriteButton active={selected.favorite} pending={pendingFavoriteIds.has(selected.id)} onClick={() => toggleFavorite(selected)} label={selected.title} detail/><button className="ghost" onClick={() => setEditor({ kind: "problem", id: selected.id, value: { title: selected.title, problemMarkdown: selected.problemMarkdown, tags: selected.tags, difficulty: selected.difficulty } })}><Pencil size={16}/> 문제 수정</button><button className="danger" onClick={() => { setDeleteError(""); setDeleteTarget(selected); }}><Trash2 size={16}/> 문제 삭제</button></div></div>
-      <section className="paper"><div className="paper-top"><div className="section-label">PROBLEM</div><CopyKatexButton content={selected.problemMarkdown} label="문제 KaTeX 복사"/></div><Markdown>{selected.problemMarkdown}</Markdown></section>
+      <section className="paper"><div className="paper-top"><div className="section-label">PROBLEM</div><div className="paper-actions"><CopyKatexButton content={selected.problemMarkdown} label="문제 KaTeX 복사"/><PngExportButton filename={`문항-${selected.title}`} label="문항 PNG 저장"><ExportCard kind="problem" problem={selected}/></PngExportButton></div></div><Markdown>{selected.problemMarkdown}</Markdown></section>
       <div className="solution-title"><div><p className="eyebrow">SOLUTIONS</p><h2>풀이 {selected.solutions.length}개</h2></div><button className="primary" onClick={() => setEditor({ kind: "solution", problemId: selected.id, title: `풀이 ${selected.solutions.length + 1}`, contentMarkdown: "" })}><Plus size={18}/> 풀이 추가</button></div>
-      {selected.solutions.map((solution, i) => <SolutionBlock key={solution.id} solution={solution} index={i} onEdit={() => setEditor({ kind: "solution", id: solution.id, problemId: selected.id, title: solution.title, contentMarkdown: solution.contentMarkdown })}/>)}
+      {selected.solutions.map((solution, i) => <SolutionBlock key={solution.id} solution={solution} index={i} problem={selected} onEdit={() => setEditor({ kind: "solution", id: solution.id, problemId: selected.id, title: solution.title, contentMarkdown: solution.contentMarkdown })}/>)}
       {selected.solutions.length === 0 && <div className="empty solution-empty">아직 풀이가 없습니다. 첫 번째 풀이를 남겨보세요.</div>}
     </article>}
     {editor && <EditorModal editor={editor} setEditor={setEditor} save={save} error={error}/>}
@@ -331,15 +331,74 @@ function FavoriteButton({ active, pending, onClick, label, detail = false }: { a
   </button>;
 }
 
-function SolutionBlock({ solution, index, onEdit }: { solution: Solution; index: number; onEdit: () => void }) {
+function SolutionBlock({ solution, index, problem, onEdit }: { solution: Solution; index: number; problem: Problem; onEdit: () => void }) {
   const [open, setOpen] = useState(false);
   return <section className={`paper solution ${open ? "is-open" : ""}`}>
     <div className="solution-bar">
       <div><span className="section-label">SOLUTION {String(index + 1).padStart(2, "0")}</span><h3>{solution.title}</h3></div>
-      <div className="solution-actions"><button className="reveal" onClick={() => setOpen((value) => !value)} aria-expanded={open}><ChevronDown size={18}/>{open ? "풀이 닫기" : "풀이 보기"}</button><CopyKatexButton content={solution.contentMarkdown} label="풀이 KaTeX 복사"/><button className="ghost" onClick={onEdit}><Pencil size={15}/> 수정</button></div>
+      <div className="solution-actions"><button className="reveal" onClick={() => setOpen((value) => !value)} aria-expanded={open}><ChevronDown size={18}/>{open ? "풀이 닫기" : "풀이 보기"}</button><CopyKatexButton content={solution.contentMarkdown} label="풀이 KaTeX 복사"/><PngExportButton filename={`풀이-${problem.title}-${solution.title}`} label="풀이 PNG 저장"><ExportCard kind="solution" problem={problem} solution={solution} index={index}/></PngExportButton><button className="ghost" onClick={onEdit}><Pencil size={15}/> 수정</button></div>
     </div>
     {open && <Markdown>{solution.contentMarkdown}</Markdown>}
   </section>;
+}
+
+function ExportCard({ kind, problem, solution, index = 0 }: { kind: "problem" | "solution"; problem: Problem; solution?: Solution; index?: number }) {
+  return <article className="export-card">
+    <header className="export-card-head">
+      <div className="export-brand"><span className="export-brand-mark">∑</span><span>SOS 수학서재</span></div>
+      <span className="export-kind">{kind === "problem" ? "PROBLEM" : `SOLUTION ${String(index + 1).padStart(2, "0")}`}</span>
+    </header>
+    <div className="export-card-body">
+      {kind === "problem" ? <>
+        <div className="export-meta"><span>난이도 {"●".repeat(problem.difficulty)}{"○".repeat(5 - problem.difficulty)}</span>{problem.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
+        <h1>{problem.title}</h1>
+        <Markdown>{problem.problemMarkdown}</Markdown>
+      </> : <>
+        <p className="export-problem-title">문항 · {problem.title}</p>
+        <h1>{solution?.title}</h1>
+        {solution && <Markdown>{solution.contentMarkdown}</Markdown>}
+      </>}
+    </div>
+    <footer className="export-card-foot"><span>한 문제, 여러 시선</span><span>math atelier</span></footer>
+  </article>;
+}
+
+function PngExportButton({ children, filename, label }: { children: React.ReactNode; filename: string; label: string }) {
+  const exportRef = useRef<HTMLDivElement>(null);
+  const [status, setStatus] = useState<"idle" | "exporting" | "saved" | "error">("idle");
+
+  async function savePng() {
+    if (!exportRef.current || status === "exporting") return;
+    setStatus("exporting");
+    try {
+      await document.fonts.ready;
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(exportRef.current, {
+        backgroundColor: "#0d1422",
+        cacheBust: true,
+        pixelRatio: 2,
+      });
+      const link = document.createElement("a");
+      const safeFilename = filename.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
+      link.download = `${safeFilename || "SOS-수학서재"}.png`;
+      link.href = dataUrl;
+      link.click();
+      setStatus("saved");
+    } catch {
+      setStatus("error");
+    } finally {
+      window.setTimeout(() => setStatus("idle"), 2200);
+    }
+  }
+
+  const buttonLabel = status === "exporting" ? "PNG 만드는 중" : status === "saved" ? "PNG 저장됨" : status === "error" ? "저장 실패 · 다시 시도" : label;
+  return <>
+    <button className={`export-png ${status}`} type="button" onClick={savePng} disabled={status === "exporting"} aria-label={buttonLabel} title="2400px 너비의 고화질 PNG로 저장">
+      {status === "exporting" ? <Loader2 className="spin" size={15}/> : status === "saved" ? <Check size={15}/> : <Download size={15}/>}<span>{buttonLabel}</span>
+    </button>
+    <div className="export-stage" aria-hidden="true"><div className="export-capture" ref={exportRef}>{children}</div></div>
+  </>;
 }
 
 function CopyKatexButton({ content, label }: { content: string; label: string }) {

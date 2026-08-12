@@ -277,16 +277,12 @@ export default function MathLibrary() {
       <section className="hero" aria-label="수학서재 통계">
         <div className="hero-copy">
           <p className="hero-kicker">ARCHIVE OF UNLIKELY QUESTIONS · VOL. 01</p>
-          <h1>정답보다 먼저,<br/><em>좋은 질문</em>을 수집합니다.</h1>
-          <p className="hero-note">계산으로 닫히지 않는 문제들.<br/>낙서하고, 의심하고, 다른 풀이를 덧붙이는 개인 수학 작업실.</p>
         </div>
         <div className="stats" aria-label="서재 현황">
           <span><strong>{String(stats.problems).padStart(2, "0")}</strong><small>문제</small></span>
           <span><strong>{String(stats.solutions).padStart(2, "0")}</strong><small>풀이</small></span>
           <span><strong>{String(stats.solved).padStart(2, "0")}</strong><small>해결</small></span>
-          <p>현재 서재의<br/>관찰 기록</p>
         </div>
-        <span className="hero-formula" aria-hidden="true">x² + y² ≠ boredom</span>
       </section>
       <section className="library" ref={libraryRef}>
         <div className="toolbar">

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, CircleDashed, Copy, Download, Grid2X2, LayoutList, Loader2, Pencil, Plus, Search, Star, Trash2, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
@@ -168,6 +167,11 @@ export default function MathLibrary() {
     });
   }
 
+  function openProblem(problem: Problem) {
+    setSelected(problem);
+    requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" })));
+  }
+
   async function toggleFavorite(problem: Problem) {
     if (pendingFavoriteIds.has(problem.id)) return;
     const favorite = !problem.favorite;
@@ -265,19 +269,24 @@ export default function MathLibrary() {
 
   return <main>
     <header className="topbar">
-      <button className="brand" onClick={() => setSelected(null)} aria-label="문제 목록으로"><span className="brand-mark"><Image src="/icon.jpg" alt="" width={40} height={40} /></span><span>SOS 수학서재</span></button>
+      <button className="brand" onClick={() => setSelected(null)} aria-label="문제 목록으로"><span className="brand-mark" aria-hidden="true">∑</span><span className="brand-copy"><strong>SOS 수학서재</strong><small>Mathematical curiosities · since 2026</small></span></button>
       <div className="header-actions"><button className="primary" onClick={() => setEditor({ kind: "problem", value: blank })}><Plus size={18}/> 문제 추가</button></div>
     </header>
 
     {!selected ? <>
       <section className="hero" aria-label="수학서재 통계">
-        <div className="stats">
-          <span><strong>{stats.problems}</strong> 문제</span>
-          <i aria-hidden="true" />
-          <span><strong>{stats.solutions}</strong> 풀이</span>
-          <i aria-hidden="true" />
-          <span><strong>{stats.solved}</strong> 해결</span>
+        <div className="hero-copy">
+          <p className="hero-kicker">ARCHIVE OF UNLIKELY QUESTIONS · VOL. 01</p>
+          <h1>정답보다 먼저,<br/><em>좋은 질문</em>을 수집합니다.</h1>
+          <p className="hero-note">계산으로 닫히지 않는 문제들.<br/>낙서하고, 의심하고, 다른 풀이를 덧붙이는 개인 수학 작업실.</p>
         </div>
+        <div className="stats" aria-label="서재 현황">
+          <span><strong>{String(stats.problems).padStart(2, "0")}</strong><small>문제</small></span>
+          <span><strong>{String(stats.solutions).padStart(2, "0")}</strong><small>풀이</small></span>
+          <span><strong>{String(stats.solved).padStart(2, "0")}</strong><small>해결</small></span>
+          <p>현재 서재의<br/>관찰 기록</p>
+        </div>
+        <span className="hero-formula" aria-hidden="true">x² + y² ≠ boredom</span>
       </section>
       <section className="library" ref={libraryRef}>
         <div className="toolbar">
@@ -294,7 +303,7 @@ export default function MathLibrary() {
         </div>
         <div className={`problem-${view}`}>
           {loading ? <p className="empty">문제를 펼치는 중…</p> : visibleProblems.length === 0 ? <p className="empty">{emptyMessage}</p> : paginatedProblems.map((problem, index) => <article className={`problem-card ${problem.solved ? "is-solved" : ""}`} key={problem.id}>
-            <button className="problem-card-main" onClick={() => setSelected(problem)}>
+            <button className="problem-card-main" onClick={() => openProblem(problem)}>
               <div className="card-top"><span className="number">{String(pageStart + index + 1).padStart(2, "0")}</span><span className="difficulty">{"●".repeat(problem.difficulty)}{"○".repeat(5 - problem.difficulty)}</span></div>
               <h2>{problem.title}</h2><p>{problem.problemMarkdown.replace(/[$#*`>\\]/g, " ").replace(/\s+/g, " ").slice(0, 112)}…</p>
               <div className="tag-row">{problem.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}</div>

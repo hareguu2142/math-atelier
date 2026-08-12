@@ -322,7 +322,6 @@ export default function MathLibrary() {
     </article>}
     {editor && <EditorModal editor={editor} setEditor={setEditor} save={save} error={error}/>}
     {deleteTarget && <DeleteProblemModal problem={deleteTarget} deleting={deleting} error={deleteError} onCancel={() => setDeleteTarget(null)} onDelete={removeProblem}/>}
-    <footer>SOS 수학서재 · 한 문제, 여러 시선</footer>
   </main>;
 }
 

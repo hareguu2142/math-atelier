@@ -48,7 +48,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .stats strong { font: italic 600 38px/1 var(--serif); }
 .stats small { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .12em; }
 
-.library,.detail { width: min(1240px,92vw); margin: 0 auto; padding: 52px 0 110px; }
+.library,.detail { width: min(1240px,92vw); margin: 0 auto; padding: 52px 0 64px; }
 .toolbar { display: grid; grid-template-columns: minmax(260px,1fr) auto; align-items: center; gap: 22px; margin-bottom: 42px; }
 .toolbar-actions,.detail-actions { display: flex; align-items: center; gap: 9px; }
 .search { height: 50px; width: min(560px,100%); display: flex; align-items: center; gap: 12px; border-bottom: 2px solid var(--ink); padding: 0 4px; background: transparent; }
@@ -178,8 +178,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .export-card .markdown { margin-top: 0; overflow: visible; color: var(--ink); font-size: 22px; line-height: 1.9; }
 .export-card .markdown .katex-display { margin: 1.25em 0; padding: 24px; overflow: visible; background: var(--deep); }
 .export-card .katex { font-size: 1.08em; }
-footer { border-top: 2px solid var(--ink); padding: 38px; text-align: center; color: var(--ink); background: var(--yellow); font: italic 14px var(--serif); }
-
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 @media (max-width:980px) {
   .hero { grid-template-columns: 1fr; }
@@ -198,7 +196,7 @@ footer { border-top: 2px solid var(--ink); padding: 38px; text-align: center; co
   .hero { min-height: 210px; padding: 20px 6vw 28px; }
   .stats { width: 100%; }
   .stats strong { font-size: 31px; }
-  .library,.detail { width: 92vw; padding-top: 38px; }
+  .library,.detail { width: 92vw; padding: 38px 0 48px; }
   .toolbar-actions { align-items: stretch; }
   .status-filter { width: 100%; order: 1; }
   .status-filter button { flex: 1; justify-content: center; padding: 0 7px; }

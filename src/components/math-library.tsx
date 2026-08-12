@@ -275,9 +275,6 @@ export default function MathLibrary() {
 
     {!selected ? <>
       <section className="hero" aria-label="수학서재 통계">
-        <div className="hero-copy">
-          <p className="hero-kicker">ARCHIVE OF UNLIKELY QUESTIONS · VOL. 01</p>
-        </div>
         <div className="stats" aria-label="서재 현황">
           <span><strong>{String(stats.problems).padStart(2, "0")}</strong><small>문제</small></span>
           <span><strong>{String(stats.solutions).padStart(2, "0")}</strong><small>풀이</small></span>

@@ -38,11 +38,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .danger-solid { color: white; background: #a02820; }
 .danger:disabled,.ghost:disabled { cursor: wait; opacity: .65; }
 
-.hero { min-height: 280px; padding: 32px max(7vw,32px) 40px; display: grid; grid-template-columns: minmax(0,1.35fr) minmax(330px,.65fr); gap: 7vw; align-items: end; position: relative; overflow: hidden; border-bottom: 2px solid var(--line); background: var(--light); }
+.hero { min-height: 210px; padding: 20px max(7vw,32px) 28px; display: grid; grid-template-columns: minmax(0,1.35fr) minmax(330px,.65fr); gap: 7vw; align-items: end; position: relative; overflow: hidden; border-bottom: 2px solid var(--line); background: var(--light); }
 .hero::before { content: "∴"; position: absolute; right: -30px; top: -100px; color: #17255b0f; font: 500 390px/1 var(--serif); transform: rotate(9deg); }
 .hero-copy { position: relative; z-index: 1; }
 .hero-kicker,.eyebrow { margin: 0 0 24px; color: var(--red); font-size: 10px; font-weight: 850; letter-spacing: .23em; }
 .stats { min-height: 145px; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); display: grid; grid-template-columns: repeat(3,1fr); position: relative; z-index: 1; }
+.hero > .stats { grid-column: 2; }
 .stats span { padding: 22px 12px; border-right: 1px solid #17255b59; display: grid; align-content: center; gap: 4px; }
 .stats strong { font: italic 600 38px/1 var(--serif); }
 .stats small { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .12em; }
@@ -182,6 +183,7 @@ footer { border-top: 2px solid var(--ink); padding: 38px; text-align: center; co
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 @media (max-width:980px) {
   .hero { grid-template-columns: 1fr; }
+  .hero > .stats { grid-column: auto; }
   .stats { max-width: 480px; }
   .problem-grid .problem-card,.problem-grid .problem-card:nth-child(7n),.problem-grid .problem-card:nth-child(7n+1):not(:first-child) { grid-column: span 6; }
   .toolbar { grid-template-columns: 1fr; }
@@ -193,7 +195,7 @@ footer { border-top: 2px solid var(--ink); padding: 38px; text-align: center; co
   .topbar::after,.brand-copy small { display: none; }
   .brand-mark { width: 38px; height: 38px; font-size: 24px; box-shadow: 3px 3px 0 var(--ink); }
   .brand-copy strong { font-size: 15px; }
-  .hero { min-height: 280px; padding: 32px 6vw 40px; }
+  .hero { min-height: 210px; padding: 20px 6vw 28px; }
   .stats { width: 100%; }
   .stats strong { font-size: 31px; }
   .library,.detail { width: 92vw; padding-top: 38px; }

@@ -38,7 +38,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .danger-solid { color: white; background: #a02820; }
 .danger:disabled,.ghost:disabled { cursor: wait; opacity: .65; }
 
-.hero { min-height: 430px; padding: clamp(56px,8vw,104px) max(7vw,32px) 70px; display: grid; grid-template-columns: minmax(0,1.35fr) minmax(330px,.65fr); gap: 7vw; align-items: end; position: relative; overflow: hidden; border-bottom: 2px solid var(--line); background: var(--light); }
+.hero { min-height: 280px; padding: 32px max(7vw,32px) 40px; display: grid; grid-template-columns: minmax(0,1.35fr) minmax(330px,.65fr); gap: 7vw; align-items: end; position: relative; overflow: hidden; border-bottom: 2px solid var(--line); background: var(--light); }
 .hero::before { content: "∴"; position: absolute; right: -30px; top: -100px; color: #17255b0f; font: 500 390px/1 var(--serif); transform: rotate(9deg); }
 .hero-copy { position: relative; z-index: 1; }
 .hero-kicker,.eyebrow { margin: 0 0 24px; color: var(--red); font-size: 10px; font-weight: 850; letter-spacing: .23em; }
@@ -193,7 +193,7 @@ footer { border-top: 2px solid var(--ink); padding: 38px; text-align: center; co
   .topbar::after,.brand-copy small { display: none; }
   .brand-mark { width: 38px; height: 38px; font-size: 24px; box-shadow: 3px 3px 0 var(--ink); }
   .brand-copy strong { font-size: 15px; }
-  .hero { min-height: 430px; padding: 58px 6vw 70px; }
+  .hero { min-height: 280px; padding: 32px 6vw 40px; }
   .stats { width: 100%; }
   .stats strong { font-size: 31px; }
   .library,.detail { width: 92vw; padding-top: 38px; }

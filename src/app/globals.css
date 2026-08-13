@@ -156,6 +156,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .pagination button:hover:not(:disabled) { background: var(--light); }
 .pagination button:disabled { opacity: .35; cursor: not-allowed; }
 .page-status { min-width: 72px; padding: 11px; border-left: 1px solid var(--ink); border-right: 1px solid var(--ink); text-align: center; font: 600 13px/1 var(--serif); }
+[data-theme="dark"] .pagination { color: #000; }
 
 .back { margin-bottom: 46px; }
 .detail { max-width: 1000px; }

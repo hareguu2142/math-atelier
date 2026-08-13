@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, CircleDashed, Copy, Download, Grid2X2, LayoutList, Loader2, Pencil, Plus, Search, Star, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, CircleDashed, Copy, Download, Grid2X2, LayoutList, Loader2, Moon, Pencil, Plus, Search, Star, Sun, Trash2, X } from "lucide-react";
 import { Markdown } from "./markdown";
 import type { Problem, ProblemInput, Solution } from "@/lib/types";
 
@@ -12,6 +12,7 @@ type EditorState =
 const blank: ProblemInput = { title: "", problemMarkdown: "", difficulty: 2, tags: [] };
 const FAVORITES_KEY = "math-atelier-favorites";
 const LEGACY_SOLVED_KEY = "math-atelier-solved";
+const THEME_KEY = "math-atelier-theme";
 const PROBLEMS_PER_PAGE = 12;
 type SolutionStatusFilter = "all" | "unsolved" | "solved";
 
@@ -34,6 +35,25 @@ export default function MathLibrary() {
   const libraryRef = useRef<HTMLElement>(null);
   const migratedLegacyFavorites = useRef(false);
   const migratedLegacySolved = useRef(false);
+
+  useLayoutEffect(() => {
+    let initialTheme = document.documentElement.dataset.theme;
+    try {
+      const savedTheme = localStorage.getItem(THEME_KEY);
+      initialTheme = savedTheme === "light" || savedTheme === "dark"
+        ? savedTheme
+        : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    } catch {}
+    document.documentElement.dataset.theme = initialTheme === "dark" ? "dark" : "light";
+  }, []);
+
+  function toggleTheme() {
+    const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = nextTheme;
+    try {
+      localStorage.setItem(THEME_KEY, nextTheme);
+    } catch {}
+  }
 
   const refresh = useCallback(async (q: string, selectedId?: string) => {
     setLoading(true);
@@ -270,7 +290,12 @@ export default function MathLibrary() {
   return <main>
     <header className="topbar">
       <button className="brand" onClick={() => setSelected(null)} aria-label="문제 목록으로"><span className="brand-mark" aria-hidden="true">∑</span><span className="brand-copy"><strong>SOS 수학서재</strong><small>Mathematical curiosities · since 2026</small></span></button>
-      <div className="header-actions"><button className="primary" onClick={() => setEditor({ kind: "problem", value: blank })}><Plus size={18}/> 문제 추가</button></div>
+      <div className="header-actions">
+        <button className="icon theme-toggle" type="button" onClick={toggleTheme} aria-label="색상 테마 전환" title="색상 테마 전환">
+          <Moon className="moon-icon" size={19}/><Sun className="sun-icon" size={19}/>
+        </button>
+        <button className="primary" onClick={() => setEditor({ kind: "problem", value: blank })}><Plus size={18}/> 문제 추가</button>
+      </div>
     </header>
 
     {!selected ? <>

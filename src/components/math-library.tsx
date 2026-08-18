@@ -429,7 +429,7 @@ function PngExportButton({ children, filename, label }: { children: React.ReactN
 
   const buttonLabel = status === "exporting" ? "PNG 만드는 중" : status === "saved" ? "PNG 저장됨" : status === "error" ? "저장 실패 · 다시 시도" : label;
   return <>
-    <button className={`export-png ${status}`} type="button" onClick={savePng} disabled={status === "exporting"} aria-label={buttonLabel} title="2400px 너비의 고화질 PNG로 저장">
+    <button className={`export-png ${status}`} type="button" onClick={savePng} disabled={status === "exporting"} aria-label={buttonLabel} title="모바일 뷰(390px) 기준의 고화질 PNG로 저장">
       {status === "exporting" ? <Loader2 className="spin" size={15}/> : status === "saved" ? <Check size={15}/> : <Download size={15}/>}<span>{buttonLabel}</span>
     </button>
     <div className="export-stage" aria-hidden="true"><div className="export-capture" ref={exportRef}>{children}</div></div>

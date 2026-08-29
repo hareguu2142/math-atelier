@@ -218,8 +218,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .export-card-body { flex: 1; min-width: 0; padding: 0 0 16px; }
 .export-card-body h1 { margin: 0 0 28px; color: var(--ink); font: 700 30px/1.2 var(--serif); letter-spacing: -.04em; overflow-wrap: anywhere; }
 .export-problem-title { margin: 0 0 16px; color: var(--red); font-size: 13px; font-weight: 800; }
-.export-card .markdown { margin-top: 0; overflow: hidden; color: var(--ink); font-size: 17px; line-height: 1.9; overflow-wrap: anywhere; }
-.export-card .markdown .katex-display { margin: 1.1em 0; padding: 14px; overflow: hidden; background: var(--deep); }
+.export-card .markdown { margin-top: 0; overflow: visible; color: var(--ink); font-size: 17px; line-height: 1.9; overflow-wrap: anywhere; }
+.export-card .markdown .katex-display { margin: 1.1em 0; padding: 14px; overflow: visible; background: var(--deep); }
 .export-card .katex { font-size: 1em; }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 @media (max-width:980px) {

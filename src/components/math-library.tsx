@@ -398,6 +398,27 @@ function ExportCard({ kind, problem, solution }: { kind: "problem" | "solution";
   </article>;
 }
 
+function fitDisplayMath(root: HTMLElement) {
+  const restorations: Array<() => void> = [];
+
+  root.querySelectorAll<HTMLElement>(".katex-display > .katex").forEach((math) => {
+    const display = math.parentElement;
+    const html = math.querySelector<HTMLElement>(".katex-html");
+    if (!display || !html || display.scrollWidth <= display.clientWidth) return;
+
+    const originalFontSize = math.style.fontSize;
+    const currentFontSize = Number.parseFloat(window.getComputedStyle(math).fontSize);
+    const scale = (math.clientWidth / html.scrollWidth) * 0.98;
+
+    math.style.fontSize = `${currentFontSize * scale}px`;
+    restorations.push(() => {
+      math.style.fontSize = originalFontSize;
+    });
+  });
+
+  return () => restorations.forEach((restore) => restore());
+}
+
 function PngExportButton({ children, filename, label }: { children: React.ReactNode; filename: string; label: string }) {
   const exportRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"idle" | "exporting" | "saved" | "error">("idle");
@@ -405,14 +426,21 @@ function PngExportButton({ children, filename, label }: { children: React.ReactN
   async function savePng() {
     if (!exportRef.current || status === "exporting") return;
     setStatus("exporting");
+    let restoreDisplayMath = () => {};
     try {
       await document.fonts.ready;
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      restoreDisplayMath = fitDisplayMath(exportRef.current);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const { toPng } = await import("html-to-image");
+      const width = Math.ceil(exportRef.current.getBoundingClientRect().width);
+      const height = Math.ceil(exportRef.current.scrollHeight) + 2;
       const dataUrl = await toPng(exportRef.current, {
         backgroundColor: "#0d1422",
         cacheBust: true,
         pixelRatio: 2,
+        width,
+        height,
       });
       const link = document.createElement("a");
       const safeFilename = filename.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
@@ -423,6 +451,7 @@ function PngExportButton({ children, filename, label }: { children: React.ReactN
     } catch {
       setStatus("error");
     } finally {
+      restoreDisplayMath();
       window.setTimeout(() => setStatus("idle"), 2200);
     }
   }

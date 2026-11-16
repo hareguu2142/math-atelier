@@ -190,6 +190,22 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .solution.is-open .reveal svg { transform: rotate(180deg); }
 .solution.is-open { padding-top: 45px; padding-bottom: 45px; }
 .solution-empty { background: transparent; }
+.problem-pane,.solutions-pane { min-width: 0; }
+.problem-pane:focus-visible { outline: 3px solid var(--red); outline-offset: 5px; }
+
+@media (min-width:981px) {
+  body { overflow-x: clip; }
+  .detail { width: min(1440px,92vw); max-width: none; }
+  .detail-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .detail-columns { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; gap: 32px; }
+  .detail-columns .paper { padding: 32px; }
+  .problem-pane { position: sticky; top: 104px; max-height: calc(100dvh - 124px); overflow: auto; scrollbar-gutter: stable; }
+  .solutions-pane .solution-title { margin-top: 0; gap: 16px; flex-wrap: wrap; }
+  .solutions-pane .solution-title .eyebrow { margin-bottom: 16px; }
+  .solutions-pane .solution-bar { align-items: flex-start; flex-wrap: wrap; gap: 20px; }
+  .solutions-pane .solution-actions { justify-content: flex-start; }
+  .solutions-pane .markdown,.problem-pane .markdown { overflow-wrap: anywhere; }
+}
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: var(--overlay); backdrop-filter: blur(4px); }
 .modal { width: min(780px,96vw); max-height: 92vh; overflow: auto; background: var(--light); border: 2px solid var(--ink); padding: 30px; box-shadow: 12px 12px 0 var(--ink); }

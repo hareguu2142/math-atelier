@@ -340,10 +340,14 @@ export default function MathLibrary() {
     </> : <article className="detail">
       <button className="back" onClick={() => setSelected(null)}><ChevronLeft size={18}/> 모든 문제</button>
       <div className="detail-head"><div><div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><h1>{selected.title}</h1></div><div className="detail-actions"><SolvedButton active={selected.solved} pending={pendingSolvedIds.has(selected.id)} onClick={() => toggleSolved(selected)} label={selected.title} detail/><FavoriteButton active={selected.favorite} pending={pendingFavoriteIds.has(selected.id)} onClick={() => toggleFavorite(selected)} label={selected.title} detail/><button className="ghost" onClick={() => setEditor({ kind: "problem", id: selected.id, value: { title: selected.title, problemMarkdown: selected.problemMarkdown, tags: selected.tags, difficulty: selected.difficulty } })}><Pencil size={16}/> 문제 수정</button><button className="danger" onClick={() => { setDeleteError(""); setDeleteTarget(selected); }}><Trash2 size={16}/> 문제 삭제</button></div></div>
-      <section className="paper"><div className="paper-top"><div className="section-label">PROBLEM</div><div className="paper-actions"><CopyKatexButton content={selected.problemMarkdown} label="문제 KaTeX 복사"/><PngExportButton filename={`문항-${selected.title}`} label="문항 PNG 저장"><ExportCard kind="problem" problem={selected}/></PngExportButton></div></div><Markdown>{selected.problemMarkdown}</Markdown></section>
+      <div className="detail-columns">
+      <section className="paper problem-pane" aria-label="문제 본문" tabIndex={0}><div className="paper-top"><div className="section-label">PROBLEM</div><div className="paper-actions"><CopyKatexButton content={selected.problemMarkdown} label="문제 KaTeX 복사"/><PngExportButton filename={`문항-${selected.title}`} label="문항 PNG 저장"><ExportCard kind="problem" problem={selected}/></PngExportButton></div></div><Markdown>{selected.problemMarkdown}</Markdown></section>
+      <section className="solutions-pane" aria-label="풀이 목록">
       <div className="solution-title"><div><p className="eyebrow">SOLUTIONS</p><h2>풀이 {selected.solutions.length}개</h2></div><button className="primary" onClick={() => setEditor({ kind: "solution", problemId: selected.id, title: `풀이 ${selected.solutions.length + 1}`, contentMarkdown: "" })}><Plus size={18}/> 풀이 추가</button></div>
       {selected.solutions.map((solution, i) => <SolutionBlock key={solution.id} solution={solution} index={i} problem={selected} onEdit={() => setEditor({ kind: "solution", id: solution.id, problemId: selected.id, title: solution.title, contentMarkdown: solution.contentMarkdown })}/>)}
       {selected.solutions.length === 0 && <div className="empty solution-empty">아직 풀이가 없습니다. 첫 번째 풀이를 남겨보세요.</div>}
+      </section>
+      </div>
     </article>}
     {editor && <EditorModal editor={editor} setEditor={setEditor} save={save} error={error}/>}
     {deleteTarget && <DeleteProblemModal problem={deleteTarget} deleting={deleting} error={deleteError} onCancel={() => setDeleteTarget(null)} onDelete={removeProblem}/>}
